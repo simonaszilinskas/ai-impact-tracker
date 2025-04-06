@@ -1,0 +1,21 @@
+{
+    "manifest_version": 3,
+    "name": "AI Impact Tracker",
+    "version": "1.0",
+    "description": "Tracks messages, responses, token usage, energy consumption, and carbon emissions on ChatGPT.",
+    "permissions": ["scripting", "storage", "webRequest", "activeTab"],
+    "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+        "js": ["content.js"],
+        "run_at": "document_start"
+      }
+    ],
+    "action": {
+      "default_popup": "popup.html"
+    }
+  }
