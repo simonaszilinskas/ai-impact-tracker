@@ -21,126 +21,173 @@ document.addEventListener('DOMContentLoaded', function() {
 function loadLogs() {
   chrome.storage.local.get('chatgptLogs', function(result) {
     const logs = result.chatgptLogs || [];
-    displayLogs(logs);
-    updateCounter(logs);
+    updateTodayStats(logs);
+    updateLifetimeStats(logs);
+    renderUsageChart(logs);
   });
 }
 
 /**
- * Displays conversation logs in the popup UI
- * Groups conversations by ID and creates collapsible accordions
+ * Updates the "Today" section with statistics for today
  * @param {Array} logs - Array of conversation log entries
  */
-function displayLogs(logs) {
-  const logsContainer = document.getElementById('logs-container');
-  logsContainer.innerHTML = ''; // Clear existing content
+function updateTodayStats(logs) {
+  // Get today's date (midnight)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   
-  if (logs.length === 0) {
-    logsContainer.innerHTML = '<div class="empty-state">No conversation logs yet. Visit ChatGPT to start logging.</div>';
-    return;
-  }
+  // Filter logs for today only
+  const todayLogs = logs.filter(log => new Date(log.timestamp) >= today);
   
-  // Sort logs by timestamp (newest first)
-  logs.sort((a, b) => b.timestamp - a.timestamp);
+  // Calculate today's statistics
+  let todayMessages = todayLogs.length;
+  let todayUserTokens = 0;
+  let todayAssistantTokens = 0;
+  let todayEnergyUsage = 0;
   
-  // Group logs by conversation
-  const conversationGroups = {};
-  logs.forEach(log => {
-    const convoId = log.conversationId || 'unknown';
-    if (!conversationGroups[convoId]) {
-      conversationGroups[convoId] = [];
-    }
-    conversationGroups[convoId].push(log);
+  todayLogs.forEach(log => {
+    todayUserTokens += log.userTokenCount || Math.ceil(log.userMessage.length / 4);
+    todayAssistantTokens += log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
+    todayEnergyUsage += log.energyUsage || 0;
   });
   
-  // Create an accordion for each conversation
-  Object.keys(conversationGroups).forEach(convoId => {
-    const convoLogs = conversationGroups[convoId];
-    const convoDate = new Date(convoLogs[0].timestamp).toLocaleDateString();
+  const todayTotalTokens = todayUserTokens + todayAssistantTokens;
+  
+  // Update the UI
+  document.getElementById('today-messages').textContent = formatNumber(todayMessages);
+  document.getElementById('today-tokens').textContent = formatNumber(todayTotalTokens);
+  
+  // Calculate and update today's environmental equivalents
+  const equivalents = calculateEnvironmentalEquivalents(todayEnergyUsage);
+  
+  document.getElementById('equiv-electricity').textContent = `${equivalents.electricity} kWh`;
+  document.getElementById('equiv-movies').textContent = `${equivalents.movies} mins`;
+  document.getElementById('equiv-toasts').textContent = equivalents.toasts;
+  document.getElementById('equiv-laundry').textContent = equivalents.laundry;
+}
+
+/**
+ * Updates the lifetime statistics section
+ * @param {Array} logs - Array of conversation log entries
+ */
+function updateLifetimeStats(logs) {
+  // Calculate lifetime totals
+  let totalMessages = logs.length;
+  let totalUserTokens = 0;
+  let totalAssistantTokens = 0;
+  let totalEnergyUsage = 0;
+  
+  logs.forEach(log => {
+    totalUserTokens += log.userTokenCount || Math.ceil(log.userMessage.length / 4);
+    totalAssistantTokens += log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
+    totalEnergyUsage += log.energyUsage || 0;
+  });
+  
+  const totalTokens = totalUserTokens + totalAssistantTokens;
+  
+  // Update the UI
+  document.getElementById('lifetime-messages').textContent = formatNumber(totalMessages);
+  document.getElementById('lifetime-tokens').textContent = formatNumber(totalTokens);
+  
+  // Calculate and update lifetime environmental equivalents
+  const equivalents = calculateEnvironmentalEquivalents(totalEnergyUsage);
+  
+  document.getElementById('lifetime-electricity').textContent = `${equivalents.electricity} kWh`;
+  document.getElementById('lifetime-movies').textContent = `${equivalents.movies} mins`;
+  document.getElementById('lifetime-toasts').textContent = equivalents.toasts;
+  document.getElementById('lifetime-laundry').textContent = equivalents.laundry;
+}
+
+/**
+ * Calculates environmental equivalents for a given energy usage
+ * @param {number} energyUsageWh - Energy usage in watt-hours
+ * @returns {Object} Object containing various environmental equivalents
+ */
+function calculateEnvironmentalEquivalents(energyUsageWh) {
+  // Convert Wh to kWh
+  const energyUsageKwh = energyUsageWh / 1000;
+  
+  // Environmental equivalents (approximate values)
+  // Harry Potter movie streaming (assuming 0.08 kWh per hour of HD streaming)
+  const movieMinutes = Math.round(energyUsageKwh / 0.08 * 60);
+  
+  // Toasts (assuming 0.04 kWh per toast)
+  const toastsToasted = Math.round(energyUsageKwh / 0.04);
+  
+  // Display electricity directly in kWh
+  const electricityKwh = energyUsageKwh.toFixed(3);
+  
+  // Laundry cycles (assuming 0.5 kWh per load)
+  const laundryLoads = Math.round(energyUsageKwh / 0.5 * 10) / 10;
+  
+  return {
+    electricity: electricityKwh,
+    movies: movieMinutes,
+    toasts: toastsToasted,
+    laundry: laundryLoads
+  };
+}
+
+/**
+ * Renders the usage chart showing daily token usage
+ * @param {Array} logs - Array of conversation log entries
+ */
+function renderUsageChart(logs) {
+  const chartContainer = document.getElementById('usage-chart');
+  chartContainer.innerHTML = '';
+  
+  // Get date range (last 7 days)
+  const dates = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    dates.push(date);
+  }
+  
+  // Calculate daily usage
+  const dailyUsage = dates.map(date => {
+    const nextDay = new Date(date);
+    nextDay.setDate(date.getDate() + 1);
     
-    // Calculate conversation totals
-    let totalUserTokens = 0;
-    let totalAssistantTokens = 0;
-    let totalEnergyUsage = 0;
-    let totalCO2Emissions = 0;
-    
-    convoLogs.forEach(log => {
-      totalUserTokens += log.userTokenCount || Math.ceil(log.userMessage.length / 4);
-      totalAssistantTokens += log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
-      totalEnergyUsage += log.energyUsage || 0;
-      totalCO2Emissions += log.co2Emissions || 0;
+    const dayLogs = logs.filter(log => {
+      const logDate = new Date(log.timestamp);
+      return logDate >= date && logDate < nextDay;
     });
     
-    // Create conversation accordion
-    const accordion = document.createElement('div');
-    accordion.className = 'conversation-accordion';
+    let dayUserTokens = 0;
+    let dayAssistantTokens = 0;
     
-    // Create accordion header
-    const header = document.createElement('div');
-    header.className = 'accordion-header';
-    header.innerHTML = `
-      <div class="convo-title">
-        <span class="convo-date">${convoDate}</span>
-      </div>
-      <div class="convo-stats">
-        <span class="message-count">${convoLogs.length} messages</span>
-        <span class="token-count">(User: ${formatNumber(totalUserTokens)} tokens | AI: ${formatNumber(totalAssistantTokens)} tokens)</span>
-      </div>
-      <div class="env-stats">
-        <span class="energy-badge">⚡ ${totalEnergyUsage.toFixed(2)} Wh</span>
-        <span class="co2-badge">🌱 ${totalCO2Emissions.toFixed(2)} g CO2eq</span>
-      </div>
-      <span class="toggle-icon">▼</span>
-    `;
-    
-    // Create accordion content
-    const content = document.createElement('div');
-    content.className = 'accordion-content hidden';
-    
-    // Add each message exchange to the content
-    convoLogs.forEach(log => {
-      const exchange = document.createElement('div');
-      exchange.className = 'message-exchange';
-      
-      const timestamp = new Date(log.timestamp).toLocaleTimeString();
-      const userTokens = log.userTokenCount || Math.ceil(log.userMessage.length / 4);
-      const assistantTokens = log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
-      const energyUsage = log.energyUsage || 0;
-      const co2Emissions = log.co2Emissions || 0;
-      
-      exchange.innerHTML = `
-        <div class="message-time">${timestamp}</div>
-        <div class="user-message">
-          <div class="message-label">You: <span class="token-badge">${formatNumber(userTokens)} tokens</span></div>
-          <div class="message-text">${escapeHtml(log.userMessage)}</div>
-        </div>
-        <div class="assistant-message">
-          <div class="message-label">
-            ChatGPT: 
-            <span class="token-badge">${formatNumber(assistantTokens)} tokens</span>
-            <span class="energy-badge small">⚡ ${energyUsage.toFixed(2)} Wh</span>
-            <span class="co2-badge small">🌱 ${co2Emissions.toFixed(2)} g CO2eq</span>
-          </div>
-          <div class="message-text">${escapeHtml(log.assistantResponse)}</div>
-        </div>
-      `;
-      
-      content.appendChild(exchange);
+    dayLogs.forEach(log => {
+      dayUserTokens += log.userTokenCount || Math.ceil(log.userMessage.length / 4);
+      dayAssistantTokens += log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
     });
     
-    // Add toggle functionality
-    header.addEventListener('click', function() {
-      content.classList.toggle('hidden');
-      const toggleIcon = header.querySelector('.toggle-icon');
-      toggleIcon.textContent = content.classList.contains('hidden') ? '▼' : '▲';
-    });
+    return {
+      date: date.toLocaleDateString(),
+      totalTokens: dayUserTokens + dayAssistantTokens
+    };
+  });
+  
+  // Find the maximum value for scaling
+  const maxTokens = Math.max(...dailyUsage.map(day => day.totalTokens), 1);
+  
+  // Create chart bars
+  dailyUsage.forEach(day => {
+    const barHeight = (day.totalTokens / maxTokens) * 100;
     
-    // Append header and content to accordion
-    accordion.appendChild(header);
-    accordion.appendChild(content);
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    bar.style.height = `${Math.max(barHeight, 4)}%`;
     
-    // Add to container
-    logsContainer.appendChild(accordion);
+    const tooltip = document.createElement('div');
+    tooltip.className = 'chart-tooltip';
+    tooltip.textContent = `${day.date}: ${formatNumber(day.totalTokens)} tokens`;
+    
+    bar.appendChild(tooltip);
+    chartContainer.appendChild(bar);
   });
 }
 
@@ -165,43 +212,6 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
-}
-
-/**
- * Updates the summary counter with total statistics
- * @param {Array} logs - Array of conversation log entries
- */
-function updateCounter(logs) {
-  const counter = document.getElementById('logs-counter');
-  
-  if (logs.length === 0) {
-    counter.textContent = "No conversation exchanges logged";
-    return;
-  }
-  
-  // Calculate overall totals
-  let totalUserTokens = 0;
-  let totalAssistantTokens = 0;
-  let totalEnergyUsage = 0;
-  let totalCO2Emissions = 0;
-  
-  logs.forEach(log => {
-    totalUserTokens += log.userTokenCount || Math.ceil(log.userMessage.length / 4);
-    totalAssistantTokens += log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
-    totalEnergyUsage += log.energyUsage || 0;
-    totalCO2Emissions += log.co2Emissions || 0;
-  });
-  
-  counter.innerHTML = `
-    ${logs.length} conversation exchanges logged
-    <div class="total-tokens">
-      Total tokens — User: ${formatNumber(totalUserTokens)} | AI: ${formatNumber(totalAssistantTokens)}
-    </div>
-    <div class="environmental-impact">
-      <div class="energy-total">⚡ Total Energy: ${totalEnergyUsage.toFixed(2)} Wh</div>
-      <div class="emissions-total">🌱 Total CO2: ${totalCO2Emissions.toFixed(2)} g CO2eq</div>
-    </div>
-  `;
 }
 
 /**

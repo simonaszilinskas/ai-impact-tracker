@@ -15,141 +15,293 @@
       background-color: #f7f7f8;
     }
 
-    /* Add these styles to your existing CSS */
-
-    /* Token count styles */
-    .token-badge {
-    font-size: 11px;
-    color: #888;
-    font-weight: normal;
-    margin-left: 5px;
-    }
-
-    .token-count {
-    font-size: 11px;
-    color: #666;
-    margin-left: 8px;
-    }
-
-    .convo-stats {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    }
-
-    .total-tokens {
-    font-size: 12px;
-    color: #666;
-    margin-top: 4px;
-    }
-
-    /* Environmental impact styles */
-    .env-stats {
-    display: flex;
-    flex-direction: row;
-    gap: 12px;
-    margin-top: 4px;
-    }
-
-    .energy-badge {
-    font-size: 12px;
-    color: #f39c12;
-    font-weight: 500;
-    }
-
-    .co2-badge {
-    font-size: 12px;
-    color: #27ae60;
-    font-weight: 500;
-    }
-
-    .energy-badge.small, .co2-badge.small {
-    font-size: 10px;
-    margin-left: 6px;
-    }
-
-    .environmental-impact {
-    margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    }
-
-    .energy-total {
-    font-size: 12px;
-    color: #f39c12;
-    }
-
-    .emissions-total {
-    font-size: 12px;
-    color: #27ae60;
-    }
-
-    /* Improve the header layout */
-    .accordion-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    }
-
-    .convo-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    }
-
-    /* Make the message labels look better with the char count */
-    .message-label {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 4px;
-    }
-
-    
     .header {
-      background-color: #10A37F;
+      background-color: #27ae60;
       color: white;
-      padding: 12px;
+      padding: 14px 16px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
       position: sticky;
       top: 0;
       z-index: 1000;
     }
     
-    .header h1 {
+    .header-logo {
+      display: flex;
+      align-items: center;
       font-size: 18px;
-      margin: 0;
+      font-weight: bold;
     }
     
-    .logs-counter {
+    .header-logo .emoji {
+      margin-right: 8px;
+      font-size: 22px;
+    }
+    
+    .today-stats {
+      background-color: white;
+      border-radius: 8px;
+      margin: 12px;
+      padding: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    
+    .today-header {
+      font-weight: bold;
+      margin-bottom: 12px;
+      font-size: 15px;
+      color: #444;
+    }
+    
+    .usage-stats {
+      margin-bottom: 10px;
+    }
+    
+    .stat-box-large {
+      padding: 12px 14px;
+      background-color: #f6f8fa;
+      border-radius: 6px;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    
+    .stat-box {
+      padding: 6px 10px;
+      background-color: #f6f8fa;
+      border-radius: 6px;
+      text-align: center;
+      position: relative;
+    }
+    
+    .message-value {
+      font-size: 22px;
+      font-weight: bold;
+      color: #27ae60;
+    }
+    
+    .token-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+    }
+    
+    .info-tooltip {
+      display: inline-block;
+      background-color: #e0e0e0;
+      color: #666;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      text-align: center;
+      font-size: 10px;
+      line-height: 14px;
+      margin-left: 4px;
+      cursor: help;
+      position: relative;
+    }
+    
+    .tooltip-text {
+      visibility: hidden;
+      width: 200px;
+      background-color: #333;
+      color: white;
+      text-align: center;
+      border-radius: 4px;
+      padding: 6px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
       font-size: 12px;
+      pointer-events: none;
+    }
+    
+    .info-tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #666;
       margin-top: 4px;
-      opacity: 0.9;
+    }
+    
+    .equivalence-section {
+      margin-top: 16px;
+    }
+    
+    .equivalence-header {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: #555;
+    }
+    
+    .electricity-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background-color: #f0f9f4;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border-left: 3px solid #27ae60;
+    }
+    
+    .electricity-item .emoji {
+      font-size: 24px;
+    }
+    
+    .equivalence-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    
+    .equivalence-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background-color: #f6f8fa;
+      border-radius: 6px;
+    }
+    
+    .equivalence-item .emoji {
+      font-size: 20px;
+    }
+    
+    .equivalence-data {
+      flex: 1;
+    }
+    
+    .equivalence-value {
+      font-weight: 500;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .equivalence-label {
+      font-size: 11px;
+      color: #666;
+    }
+    
+    .lifetime-section {
+      background-color: white;
+      border-radius: 8px;
+      margin: 12px;
+      padding: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    
+    .lifetime-header {
+      font-weight: bold;
+      margin-bottom: 12px;
+      font-size: 15px;
+      color: #444;
+    }
+    
+    .lifetime-stats {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      background-color: #f6f8fa;
+      border-radius: 6px;
+      padding: 8px 12px;
+    }
+    
+    .lifetime-value {
+      font-size: 16px;
+      font-weight: bold;
+      color: #27ae60;
+    }
+    
+    .lifetime-token-count {
+      font-size: 13px;
+      color: #666;
+      margin-left: 6px;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .chart-container {
+      height: 160px;
+      margin: 20px 0 10px 0;
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      padding-top: 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .chart-bar {
+      flex: 1;
+      background-color: #27ae60;
+      border-radius: 3px 3px 0 0;
+      position: relative;
+      min-height: 4px;
+      transition: height 0.3s ease;
+    }
+    
+    .chart-bar:hover {
+      background-color: #219653;
+    }
+    
+    .chart-tooltip {
+      position: absolute;
+      top: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    
+    .chart-bar:hover .chart-tooltip {
+      opacity: 1;
+    }
+    
+    .chart-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      color: #888;
+      font-size: 10px;
+    }
+    
+    .lifetime-equivalents {
+      margin-top: 16px;
     }
     
     .controls {
       display: flex;
       gap: 8px;
-      padding: 8px 12px;
-      background-color: #ffffff;
-      border-bottom: 1px solid #e5e5e5;
+      padding: 12px;
+      justify-content: center;
+      margin-top: 10px;
     }
     
     button {
-      padding: 6px 12px;
+      padding: 8px 14px;
       border: none;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 12px;
-      transition: background-color 0.2s;
+      font-size: 13px;
+      transition: all 0.2s;
     }
     
     .primary-btn {
-      background-color: #10A37F;
+      background-color: #27ae60;
       color: white;
     }
     
@@ -159,115 +311,131 @@
     }
     
     button:hover {
-      opacity: 0.9;
-    }
-    
-    .logs-container {
-      padding: 0;
-      overflow-y: auto;
-      max-height: 500px;
-    }
-    
-    .conversation-accordion {
-      margin: 8px;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      background-color: white;
-    }
-    
-    .accordion-header {
-      padding: 12px;
-      background-color: #f0f0f0;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .accordion-header:hover {
-      background-color: #e8e8e8;
-    }
-    
-    .accordion-content {
-      padding: 0;
-    }
-    
-    .accordion-content.hidden {
-      display: none;
-    }
-    
-    .convo-title {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .convo-date {
-      font-weight: bold;
-    }
-    
-    .model-badge {
-      font-size: 11px;
-      color: #10A37F;
-      margin-top: 4px;
-    }
-    
-    .message-count {
-      font-size: 12px;
-      color: #666;
-    }
-    
-    .message-exchange {
-      padding: 12px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    
-    .message-time {
-      font-size: 11px;
-      color: #888;
-      margin-bottom: 4px;
-    }
-    
-    .user-message, .assistant-message {
-      margin-bottom: 8px;
-    }
-    
-    .message-label {
-      font-weight: bold;
-      margin-bottom: 4px;
-    }
-    
-    .user-message .message-label {
-      color: #6e6e80;
-    }
-    
-    .assistant-message .message-label {
-      color: #10A37F;
-    }
-    
-    .message-text {
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-size: 13px;
-      line-height: 1.4;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    
-    .empty-state {
-      padding: 24px;
-      text-align: center;
-      color: #666;
-      font-style: italic;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
   </style>
   <script src="popup.js"></script>
 </head>
 <body>
   <div class="header">
-    <div>
-      <h1>AI Impact Tracker</h1>
-      <div id="logs-counter" class="logs-counter">0 conversation exchanges logged</div>
+    <div class="header-logo">
+      <div class="emoji">🌱</div>
+      <div>AI Impact Tracker</div>
+    </div>
+  </div>
+  
+  <div class="today-stats">
+    <div class="today-header">Today:</div>
+    <div class="usage-stats">
+      <div class="stat-box-large">
+        <div class="message-value" id="today-messages">0</div>
+        <div class="stat-label">Messages Sent</div>
+      </div>
+      <div class="stat-box">
+        <div class="token-value">
+          <span id="today-tokens">0</span> tokens
+          <div class="info-tooltip">?
+            <div class="tooltip-text">Tokens are the units that AI models process text in. One token is about 4 characters or 3/4 of a word.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="equivalence-section">
+      <div class="equivalence-header">Environmental Impact:</div>
+      
+      <div class="electricity-item">
+        <div class="emoji">⚡</div>
+        <div class="equivalence-data">
+          <div class="equivalence-value" id="equiv-electricity">0 kWh</div>
+          <div class="equivalence-label">Electricity Consumed</div>
+        </div>
+      </div>
+      
+      <div class="equivalence-grid">
+        <div class="equivalence-item">
+          <div class="emoji">🧙‍♂️</div>
+          <div class="equivalence-data">
+            <div class="equivalence-value" id="equiv-movies">0 mins</div>
+            <div class="equivalence-label">Harry Potter Streaming</div>
+          </div>
+        </div>
+        <div class="equivalence-item">
+          <div class="emoji">🍞</div>
+          <div class="equivalence-data">
+            <div class="equivalence-value" id="equiv-toasts">0</div>
+            <div class="equivalence-label">Toasts Toasted</div>
+          </div>
+        </div>
+        <div class="equivalence-item">
+          <div class="emoji">👕</div>
+          <div class="equivalence-data">
+            <div class="equivalence-value" id="equiv-laundry">0</div>
+            <div class="equivalence-label">Loads of Laundry</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="lifetime-section">
+    <div class="lifetime-header">Lifetime Usage:</div>
+    
+    <div class="lifetime-stats">
+      <div class="lifetime-value" id="lifetime-messages">0</div>
+      <div class="stat-label">Total Messages</div>
+      <div class="lifetime-token-count">
+        (<span id="lifetime-tokens">0</span> tokens
+        <div class="info-tooltip">?
+          <div class="tooltip-text">Tokens are the units that AI models process text in. One token is about 4 characters or 3/4 of a word.</div>
+        </div>)
+      </div>
+    </div>
+    
+    <div class="chart-container" id="usage-chart">
+      <!-- Chart bars will be added by JavaScript -->
+    </div>
+    
+    <div class="chart-labels">
+      <div>7 days ago</div>
+      <div>Today</div>
+    </div>
+    
+    <div class="lifetime-equivalents">
+      <div class="equivalence-header">Lifetime Environmental Impact:</div>
+      
+      <div class="electricity-item">
+        <div class="emoji">⚡</div>
+        <div class="equivalence-data">
+          <div class="equivalence-value" id="lifetime-electricity">0 kWh</div>
+          <div class="equivalence-label">Total Electricity Consumed</div>
+        </div>
+      </div>
+      
+      <div class="equivalence-grid">
+        <div class="equivalence-item">
+          <div class="emoji">🧙‍♂️</div>
+          <div class="equivalence-data">
+            <div class="equivalence-value" id="lifetime-movies">0 mins</div>
+            <div class="equivalence-label">Harry Potter Movies</div>
+          </div>
+        </div>
+        <div class="equivalence-item">
+          <div class="emoji">🍞</div>
+          <div class="equivalence-data">
+            <div class="equivalence-value" id="lifetime-toasts">0</div>
+            <div class="equivalence-label">Toasts Toasted</div>
+          </div>
+        </div>
+        <div class="equivalence-item">
+          <div class="emoji">👕</div>
+          <div class="equivalence-data">
+            <div class="equivalence-value" id="lifetime-laundry">0</div>
+            <div class="equivalence-label">Loads of Laundry</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   
@@ -275,10 +443,6 @@
     <button id="refresh-btn" class="primary-btn">Refresh</button>
     <button id="export-btn" class="secondary-btn">Export Logs</button>
     <button id="clear-btn" class="secondary-btn">Clear All</button>
-  </div>
-  
-  <div id="logs-container" class="logs-container">
-    <!-- Logs will be inserted here -->
   </div>
 </body>
 </html>
