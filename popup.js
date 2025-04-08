@@ -119,7 +119,7 @@ function updateTodayStats(logs) {
   
   // Update the UI
   document.getElementById('today-messages').textContent = formatNumber(todayMessages);
-  document.getElementById('today-energy').textContent = formatNumber(todayEnergyUsage.toFixed(2));
+  document.getElementById('today-energy').textContent = formatNumber(todayEnergyUsage.toFixed(2), true);
   
   // Calculate and update today's environmental equivalents
   const equivalents = calculateEnvironmentalEquivalents(todayEnergyUsage);
@@ -155,7 +155,7 @@ function updateLifetimeStats(logs) {
   
   // Update the UI
   document.getElementById('lifetime-messages').textContent = formatNumber(totalMessages);
-  document.getElementById('lifetime-energy').textContent = formatNumber(totalEnergyUsage.toFixed(2));
+  document.getElementById('lifetime-energy').textContent = formatNumber(totalEnergyUsage.toFixed(2), true);
   
   // Calculate and update lifetime environmental equivalents
   const equivalents = calculateEnvironmentalEquivalents(totalEnergyUsage);
@@ -252,7 +252,7 @@ function renderUsageChart(logs) {
     
     const tooltip = document.createElement('div');
     tooltip.className = 'chart-tooltip';
-    tooltip.textContent = `${day.date}: ${formatNumber(day.messageCount)} msgs (${day.energyUsage.toFixed(2)} Wh)`;
+    tooltip.textContent = `${day.date}: ${formatNumber(day.messageCount)} msgs (${formatNumber(day.energyUsage.toFixed(2), true)} Wh)`;
     
     bar.appendChild(tooltip);
     chartContainer.appendChild(bar);
@@ -309,7 +309,7 @@ function renderHourlyChart(logs) {
     
     // Format hour with leading zero
     const hourStr = `${hourData.hour.toString().padStart(2, '0')}:00`;
-    tooltip.textContent = `${hourStr}: ${formatNumber(hourData.messageCount)} msgs (${hourData.energyUsage.toFixed(2)} Wh)`;
+    tooltip.textContent = `${hourStr}: ${formatNumber(hourData.messageCount)} msgs (${formatNumber(hourData.energyUsage.toFixed(2), true)} Wh)`;
     
     bar.appendChild(tooltip);
     chartContainer.appendChild(bar);
@@ -318,10 +318,21 @@ function renderHourlyChart(logs) {
 
 /**
  * Formats numbers with commas for better readability
+ * For watt-hour values over 1000, uses k format (e.g., 1.4k)
  * @param {number} num - Number to format
+ * @param {boolean} isEnergy - Whether this is an energy value (Wh)
  * @returns {string} Formatted number string
  */
-function formatNumber(num) {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+function formatNumber(num, isEnergy = false) {
+  // Parse the number to ensure we're working with a number
+  const value = parseFloat(num);
+  
+  // For energy values (Wh) over 1000, use k format
+  if (isEnergy && value >= 1000) {
+    return (value / 1000).toFixed(1) + 'k';
+  }
+  
+  // Otherwise use comma format
+  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
