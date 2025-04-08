@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('today-tab').addEventListener('click', function() {
     switchTab('today');
   });
+  
+  // Set up theme toggle
+  initTheme();
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
 });
 
 /**
@@ -66,21 +70,14 @@ function updateTodayStats(logs) {
   
   // Calculate today's statistics
   let todayMessages = todayLogs.length;
-  let todayUserTokens = 0;
-  let todayAssistantTokens = 0;
   let todayEnergyUsage = 0;
   
   todayLogs.forEach(log => {
-    todayUserTokens += log.userTokenCount || Math.ceil(log.userMessage.length / 4);
-    todayAssistantTokens += log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
     todayEnergyUsage += log.energyUsage || 0;
   });
   
-  const todayTotalTokens = todayUserTokens + todayAssistantTokens;
-  
   // Update the UI
   document.getElementById('today-messages').textContent = formatNumber(todayMessages);
-  document.getElementById('today-tokens').textContent = formatNumber(todayTotalTokens);
   document.getElementById('today-energy').textContent = formatNumber(todayEnergyUsage.toFixed(2));
   
   // Calculate and update today's environmental equivalents
@@ -99,21 +96,14 @@ function updateTodayStats(logs) {
 function updateLifetimeStats(logs) {
   // Calculate lifetime totals
   let totalMessages = logs.length;
-  let totalUserTokens = 0;
-  let totalAssistantTokens = 0;
   let totalEnergyUsage = 0;
   
   logs.forEach(log => {
-    totalUserTokens += log.userTokenCount || Math.ceil(log.userMessage.length / 4);
-    totalAssistantTokens += log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
     totalEnergyUsage += log.energyUsage || 0;
   });
   
-  const totalTokens = totalUserTokens + totalAssistantTokens;
-  
   // Update the UI
   document.getElementById('lifetime-messages').textContent = formatNumber(totalMessages);
-  document.getElementById('lifetime-tokens').textContent = formatNumber(totalTokens);
   document.getElementById('lifetime-energy').textContent = formatNumber(totalEnergyUsage.toFixed(2));
   
   // Calculate and update lifetime environmental equivalents
@@ -157,7 +147,7 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
 }
 
 /**
- * Renders the usage chart showing daily token usage
+ * Renders the usage chart showing daily message and energy usage
  * @param {Array} logs - Array of conversation log entries
  */
 function renderUsageChart(logs) {
@@ -185,27 +175,25 @@ function renderUsageChart(logs) {
       return logDate >= date && logDate < nextDay;
     });
     
-    let dayUserTokens = 0;
-    let dayAssistantTokens = 0;
+    let dayEnergyUsage = 0;
     
     dayLogs.forEach(log => {
-      dayUserTokens += log.userTokenCount || Math.ceil(log.userMessage.length / 4);
-      dayAssistantTokens += log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
+      dayEnergyUsage += log.energyUsage || 0;
     });
     
     return {
       date: date.toLocaleDateString(),
-      totalTokens: dayUserTokens + dayAssistantTokens,
+      energyUsage: dayEnergyUsage,
       messageCount: dayLogs.length
     };
   });
   
   // Find the maximum value for scaling
-  const maxTokens = Math.max(...dailyUsage.map(day => day.totalTokens), 1);
+  const maxEnergy = Math.max(...dailyUsage.map(day => day.energyUsage), 0.1);
   
   // Create chart bars
   dailyUsage.forEach(day => {
-    const barHeight = (day.totalTokens / maxTokens) * 100;
+    const barHeight = (day.energyUsage / maxEnergy) * 100;
     
     const bar = document.createElement('div');
     bar.className = 'chart-bar';
@@ -213,7 +201,7 @@ function renderUsageChart(logs) {
     
     const tooltip = document.createElement('div');
     tooltip.className = 'chart-tooltip';
-    tooltip.textContent = `${day.date}: ${formatNumber(day.totalTokens)} tokens (${day.messageCount} msgs)`;
+    tooltip.textContent = `${day.date}: ${formatNumber(day.messageCount)} msgs (${day.energyUsage.toFixed(2)} Wh)`;
     
     bar.appendChild(tooltip);
     chartContainer.appendChild(bar);
@@ -240,7 +228,7 @@ function renderHourlyChart(logs) {
   for (let hour = 0; hour < 24; hour++) {
     hourlyData.push({
       hour: hour,
-      totalTokens: 0,
+      energyUsage: 0,
       messageCount: 0
     });
   }
@@ -250,19 +238,16 @@ function renderHourlyChart(logs) {
     const logDate = new Date(log.timestamp);
     const hour = logDate.getHours();
     
-    const userTokens = log.userTokenCount || Math.ceil(log.userMessage.length / 4);
-    const assistantTokens = log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
-    
-    hourlyData[hour].totalTokens += userTokens + assistantTokens;
+    hourlyData[hour].energyUsage += log.energyUsage || 0;
     hourlyData[hour].messageCount++;
   });
   
   // Find the maximum value for scaling
-  const maxTokens = Math.max(...hourlyData.map(hour => hour.totalTokens), 1);
+  const maxEnergy = Math.max(...hourlyData.map(hour => hour.energyUsage), 0.1);
   
   // Create chart bars
   hourlyData.forEach(hourData => {
-    const barHeight = (hourData.totalTokens / maxTokens) * 100;
+    const barHeight = (hourData.energyUsage / maxEnergy) * 100;
     
     const bar = document.createElement('div');
     bar.className = 'chart-bar';
@@ -273,7 +258,7 @@ function renderHourlyChart(logs) {
     
     // Format hour with leading zero
     const hourStr = `${hourData.hour.toString().padStart(2, '0')}:00`;
-    tooltip.textContent = `${hourStr}: ${formatNumber(hourData.totalTokens)} tokens (${hourData.messageCount} msgs)`;
+    tooltip.textContent = `${hourStr}: ${formatNumber(hourData.messageCount)} msgs (${hourData.energyUsage.toFixed(2)} Wh)`;
     
     bar.appendChild(tooltip);
     chartContainer.appendChild(bar);
@@ -287,4 +272,43 @@ function renderHourlyChart(logs) {
  */
 function formatNumber(num) {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+/**
+ * Initializes the theme based on saved preferences or system preferences
+ */
+function initTheme() {
+  chrome.storage.local.get('theme', function(result) {
+    const savedTheme = result.theme;
+    
+    if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (savedTheme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      // If no preference is saved, respect the system preference
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    }
+  });
+}
+
+/**
+ * Toggles between light and dark themes
+ */
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  let newTheme;
+  
+  if (currentTheme === 'dark') {
+    newTheme = 'light';
+  } else {
+    newTheme = 'dark';
+  }
+  
+  document.documentElement.setAttribute('data-theme', newTheme);
+  
+  // Save the theme preference
+  chrome.storage.local.set({ theme: newTheme });
 }
