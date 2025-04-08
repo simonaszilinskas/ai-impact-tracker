@@ -4,6 +4,8 @@
 <head>
   <meta charset="utf-8">
   <title>AI Impact Tracker</title>
+  <!-- Remix Icon CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
   <style>
     /* Google Fonts - Open Sans */
     @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap');
@@ -54,10 +56,17 @@
     
     .info-icon {
       cursor: pointer;
-      font-size: 18px;
       padding: 4px 8px;
       border-radius: 4px;
       transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .info-icon i {
+      font-size: 20px;
+      color: var(--tooltip-text);
     }
     
     .info-icon:hover {
@@ -71,9 +80,16 @@
       font-weight: bold;
     }
     
-    .header-logo .emoji {
+    .header-logo .icon {
       margin-right: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .header-logo .icon i {
       font-size: 22px;
+      color: var(--tooltip-text);
     }
     
     .tab-container {
@@ -172,17 +188,14 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background-color: var(--secondary-background);
       color: var(--muted-text);
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      text-align: center;
-      font-size: 10px;
-      line-height: 14px;
       cursor: help;
       position: relative;
       flex-shrink: 0;
+    }
+    
+    .info-tooltip i {
+      font-size: 14px;
     }
     
     .tooltip-text {
@@ -358,10 +371,10 @@
 <body>
   <div class="header">
     <div class="header-logo">
-      <div class="emoji">🌱</div>
+      <div class="icon"><i class="ri-leaf-line"></i></div>
       <div>AI impact tracker</div>
     </div>
-    <a href="https://example.com/methodology" target="_blank" class="info-icon" title="View methodology">ℹ️</a>
+    <a href="https://example.com/methodology" target="_blank" class="info-icon" title="View methodology"><i class="ri-information-line"></i></a>
   </div>
   
   <div class="tab-container">
@@ -386,7 +399,7 @@
             <div class="message-value" id="lifetime-energy">0</div>
             <div class="stat-label">
               <span>Watt-hours used</span>
-              <span class="info-tooltip">?
+              <span class="info-tooltip"><i class="ri-question-line"></i>
                 <div class="tooltip-text">This is an estimate based on energy usage patterns for large Mixture of Experts (MoE) models with 440B total parameters and 55B active parameters per inference.</div>
               </span>
             </div>
@@ -459,7 +472,7 @@
             <div class="message-value" id="today-energy">0</div>
             <div class="stat-label">
               <span>Watt-hours used</span>
-              <span class="info-tooltip">?
+              <span class="info-tooltip"><i class="ri-question-line"></i>
                 <div class="tooltip-text">This is an estimate based on energy usage patterns for large Mixture of Experts (MoE) models with 440B total parameters and 55B active parameters per inference.</div>
               </span>
             </div>
