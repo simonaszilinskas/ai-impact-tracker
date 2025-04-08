@@ -169,7 +169,9 @@
     }
     
     .info-tooltip {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background-color: var(--secondary-background);
       color: var(--muted-text);
       width: 14px;
@@ -178,9 +180,9 @@
       text-align: center;
       font-size: 10px;
       line-height: 14px;
-      margin-left: 4px;
       cursor: help;
       position: relative;
+      flex-shrink: 0;
     }
     
     .tooltip-text {
@@ -211,6 +213,9 @@
       font-size: 12px;
       color: var(--muted-text);
       margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
     
     .equivalence-section {
@@ -380,10 +385,10 @@
           <div class="stat-data">
             <div class="message-value" id="lifetime-energy">0</div>
             <div class="stat-label">
-              Watt-hours used
-              <div class="info-tooltip">?
+              <span>Watt-hours used</span>
+              <span class="info-tooltip">?
                 <div class="tooltip-text">This is an estimate based on typical energy usage patterns for AI models.</div>
-              </div>
+              </span>
             </div>
           </div>
         </div>
@@ -453,10 +458,10 @@
           <div class="stat-data">
             <div class="message-value" id="today-energy">0</div>
             <div class="stat-label">
-              Watt-hours used
-              <div class="info-tooltip">?
+              <span>Watt-hours used</span>
+              <span class="info-tooltip">?
                 <div class="tooltip-text">This is an estimate based on typical energy usage patterns for AI models.</div>
-              </div>
+              </span>
             </div>
           </div>
         </div>
