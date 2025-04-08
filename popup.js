@@ -185,10 +185,24 @@ function updateTodayStats(logs) {
   const equivalents = calculateEnvironmentalEquivalents(todayEnergyUsage);
   
   // Update the DOM with the calculated values, ensure we have proper formatting
-  document.getElementById('today-movies').textContent = `${equivalents.movies} mins`;
-  document.getElementById('today-toasts').textContent = formatNumber(equivalents.toasts);
-  document.getElementById('today-phones').textContent = formatNumber(equivalents.phones);
-  document.getElementById('today-train').textContent = `${formatNumber(equivalents.train)} km`;
+  try {
+    // Update each element individually with error handling
+    document.getElementById('today-movies').textContent = `${equivalents.movies} mins`;
+    
+    // Special handling for toasts with explicit debugging
+    const todayToastElement = document.getElementById('today-toasts');
+    if (todayToastElement) {
+      console.log('Updating today toasts element:', todayToastElement, 'with value:', equivalents.toasts);
+      todayToastElement.textContent = formatNumber(equivalents.toasts);
+    } else {
+      console.error('Today toast element not found! Check the ID in HTML.');
+    }
+    
+    document.getElementById('today-phones').textContent = formatNumber(equivalents.phones);
+    document.getElementById('today-train').textContent = `${formatNumber(equivalents.train)} km`;
+  } catch (error) {
+    console.error('Error updating today environmental equivalents:', error);
+  }
   
   // Log the values for debugging
   console.log('Today environmental equivalents:', equivalents);
@@ -225,10 +239,29 @@ function updateLifetimeStats(logs) {
   const equivalents = calculateEnvironmentalEquivalents(totalEnergyUsage);
   
   // Update the DOM with the calculated values, ensure we have proper formatting
-  document.getElementById('lifetime-movies').textContent = `${equivalents.movies} mins`;
-  document.getElementById('lifetime-toasts').textContent = formatNumber(equivalents.toasts);
-  document.getElementById('lifetime-phones').textContent = formatNumber(equivalents.phones);
-  document.getElementById('lifetime-train').textContent = `${formatNumber(equivalents.train)} km`;
+  try {
+    // Update each element individually with error handling
+    document.getElementById('lifetime-movies').textContent = `${equivalents.movies} mins`;
+    
+    // Special handling for toasts with explicit debugging
+    const toastElement = document.getElementById('lifetime-toasts');
+    if (toastElement) {
+      console.log('Updating toasts element:', toastElement, 'with value:', equivalents.toasts);
+      toastElement.textContent = formatNumber(equivalents.toasts);
+    } else {
+      console.error('Toast element not found! Check the ID in HTML.');
+    }
+    
+    document.getElementById('lifetime-phones').textContent = formatNumber(equivalents.phones);
+    document.getElementById('lifetime-train').textContent = `${formatNumber(equivalents.train)} km`;
+    
+    // Force a repaint to ensure updates are visible
+    document.body.style.display = 'none';
+    document.body.offsetHeight; // Trigger reflow
+    document.body.style.display = '';
+  } catch (error) {
+    console.error('Error updating environmental equivalents:', error);
+  }
   
   // Log the values for debugging
   console.log('Lifetime environmental equivalents:', equivalents);
@@ -264,6 +297,7 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
   
   // Toasts (assuming 0.04 kWh per toast)
   const toastsToasted = Math.max(0, Math.round(energyUsageKwh / 0.04));
+  console.log(`Calculated toasts: ${energyUsageKwh} kWh / 0.04 = ${toastsToasted} toasts`);
   
   // Phone charges (assuming 0.0088 kWh per full phone charge)
   const phoneCharges = Math.max(0, Math.round(energyUsageKwh / 0.0088 * 10) / 10);
