@@ -25,13 +25,37 @@ const WORLD_EMISSION_FACTOR = 0.418; // Global average emission factor (kgCO2eq/
 
 /**
  * Saves data to Chrome's local storage
+ * Handles extension context invalidation gracefully
  * @param {Object} data - Data object to store
  */
 function saveToStorage(data) {
   try {
-    chrome.storage.local.set(data);
+    // Check if Chrome API is still available
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set(data, function() {
+        // Check for runtime error
+        if (chrome.runtime.lastError) {
+          console.error("Chrome storage error:", chrome.runtime.lastError);
+          // If context is invalidated, we'll retry once after a delay
+          if (chrome.runtime.lastError.message.includes("Extension context invalidated")) {
+            setTimeout(() => {
+              console.log("Attempting to reconnect to extension context...");
+              // This will either work with the refreshed context or fail silently
+              try {
+                chrome.storage.local.set(data);
+              } catch (innerError) {
+                // At this point, we'll just let it go
+              }
+            }, 1000);
+          }
+        }
+      });
+    } else {
+      console.warn("Chrome storage API not available");
+    }
   } catch (e) {
     console.error("Storage error:", e);
+    // Don't throw further, just log and continue
   }
 }
 
@@ -100,23 +124,98 @@ function saveLog(userMessage, assistantResponse) {
 /**
  * Scans the DOM for ChatGPT conversation messages
  * Uses data attributes specific to ChatGPT's DOM structure
+ * Includes error handling to prevent extension crashes
  */
 function scanMessages() {
-  // Find all user and assistant messages by their data attributes
-  const userMessages = [...document.querySelectorAll('[data-message-author-role="user"]')];
-  const assistantMessages = [...document.querySelectorAll('[data-message-author-role="assistant"]')];
-  
-  // Process message pairs in order
-  for (let i = 0; i < userMessages.length; i++) {
-    if (i < assistantMessages.length) {
-      const userMessage = userMessages[i].textContent.trim();
-      const assistantResponse = assistantMessages[i].textContent.trim();
+  try {
+    // Find all user and assistant messages by their data attributes
+    const userMessages = [...document.querySelectorAll('[data-message-author-role="user"]')];
+    const assistantMessages = [...document.querySelectorAll('[data-message-author-role="assistant"]')];
+    
+    // Attempt alternative selectors if the primary ones didn't find anything
+    let foundMessages = userMessages.length > 0 && assistantMessages.length > 0;
+    
+    // If we didn't find any messages with the primary selectors, try alternative ones
+    if (!foundMessages) {
+      // Try some alternative selectors that might match different versions of ChatGPT
+      const alternativeUserSelectors = [
+        '.markdown p', // Look for paragraph text in markdown areas
+        '[data-role="user"]', 
+        '.user-message',
+        '[data-testid="user-message"]',
+        '.text-message-content'
+      ];
       
-      if (userMessage) {
-        // Save any non-empty exchange
-        saveLog(userMessage, assistantResponse);
+      const alternativeAssistantSelectors = [
+        '.markdown p',
+        '[data-role="assistant"]',
+        '.assistant-message', 
+        '[data-testid="assistant-message"]',
+        '.assistant-response'
+      ];
+      
+      // Try each alternative selector
+      for (const userSelector of alternativeUserSelectors) {
+        const altUserMessages = document.querySelectorAll(userSelector);
+        if (altUserMessages.length > 0) {
+          for (const assistantSelector of alternativeAssistantSelectors) {
+            const altAssistantMessages = document.querySelectorAll(assistantSelector);
+            if (altAssistantMessages.length > 0) {
+              console.log(`Found alternative selectors: ${userSelector} (${altUserMessages.length}) and ${assistantSelector} (${altAssistantMessages.length})`);
+              
+              // Try to process these alternative messages
+              for (let i = 0; i < Math.min(altUserMessages.length, altAssistantMessages.length); i++) {
+                try {
+                  const userMessage = altUserMessages[i].textContent.trim();
+                  const assistantResponse = altAssistantMessages[i].textContent.trim();
+                  
+                  if (userMessage && assistantResponse) {
+                    // Save any non-empty exchange
+                    saveLog(userMessage, assistantResponse);
+                    foundMessages = true;
+                  }
+                } catch (altMessageError) {
+                  console.error("Error processing alternative message pair:", altMessageError);
+                }
+              }
+              
+              // If we found messages with this selector pair, stop trying others
+              if (foundMessages) break;
+            }
+          }
+          // If we found messages with any assistant selector, stop trying other user selectors
+          if (foundMessages) break;
+        }
       }
     }
+    
+    // Log the results of the scan for debugging
+    if (userMessages.length > 0 || assistantMessages.length > 0) {
+      console.log(`Found ${userMessages.length} user messages and ${assistantMessages.length} assistant messages`);
+    }
+    
+    // Process message pairs in order
+    for (let i = 0; i < userMessages.length; i++) {
+      if (i < assistantMessages.length) {
+        try {
+          const userMessage = userMessages[i].textContent.trim();
+          const assistantResponse = assistantMessages[i].textContent.trim();
+          
+          if (userMessage) {
+            // Save any non-empty exchange
+            saveLog(userMessage, assistantResponse);
+          }
+        } catch (messageError) {
+          console.error("Error processing message pair:", messageError);
+          // Continue with next message pair
+        }
+      }
+    }
+    
+    return foundMessages;
+  } catch (e) {
+    console.error("Error scanning messages:", e);
+    return false;
   }
 }
 
@@ -234,12 +333,32 @@ function setupObserver() {
  * Initializes the extension functionality
  */
 function initialize() {
-  // Load existing logs from storage
-  chrome.storage.local.get('chatgptLogs', (result) => {
-    if (result.chatgptLogs) {
-      logs.push(...result.chatgptLogs);
+  // Load existing logs from storage with error handling
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get('chatgptLogs', (result) => {
+        try {
+          if (chrome.runtime.lastError) {
+            console.error("Error loading logs:", chrome.runtime.lastError);
+            return;
+          }
+          
+          if (result && result.chatgptLogs) {
+            logs.push(...result.chatgptLogs);
+            console.log(`Loaded ${result.chatgptLogs.length} conversation logs`);
+          } else {
+            console.log("No existing logs found, starting fresh");
+          }
+        } catch (innerError) {
+          console.error("Error processing stored logs:", innerError);
+        }
+      });
+    } else {
+      console.warn("Chrome storage API not available for loading logs");
     }
-  });
+  } catch (e) {
+    console.error("Failed to access storage:", e);
+  }
   
   // Setup when DOM is ready
   if (document.readyState === "complete" || document.readyState === "interactive") {
