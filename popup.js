@@ -24,29 +24,64 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /**
  * Adjusts the popup height to fit content without scrolling
+ * Uses a safer implementation to avoid ResizeObserver loop errors
  */
 function adjustPopupHeight() {
-  // Dynamically adjust chart heights if needed
-  const resizeObserver = new ResizeObserver(entries => {
+  // Use requestAnimationFrame to avoid ResizeObserver loops
+  let rafId = null;
+  let lastHeight = 0;
+  let resizeObserver = null;
+  
+  // Function that actually handles resizing, but throttled with rAF
+  const processResize = () => {
+    rafId = null;
+    
     // Get the visible tab content
     const activeTab = document.querySelector('.stats-container.active');
     if (!activeTab) return;
     
-    // If we detect we might need to scroll, reduce chart height
-    if (document.body.scrollHeight > window.innerHeight) {
+    // Get current height
+    const currentScrollHeight = document.body.scrollHeight;
+    
+    // Only process if height actually changed since last check
+    if (currentScrollHeight !== lastHeight && currentScrollHeight > window.innerHeight) {
+      lastHeight = currentScrollHeight;
+      
+      // Resize charts to fit
       const charts = document.querySelectorAll('.chart-container, .hourly-chart-container');
+      let resized = false;
+      
       charts.forEach(chart => {
         // Only reduce height if it's still above minimum
         const currentHeight = parseInt(getComputedStyle(chart).height);
         if (currentHeight > 80) {
-          chart.style.height = `${Math.max(80, currentHeight - 10)}px`;
+          chart.style.height = `${Math.max(80, currentHeight - 5)}px`;
+          resized = true;
         }
       });
+      
+      // If we made changes, disconnect and delay re-connecting to prevent loops
+      if (resized && resizeObserver) {
+        resizeObserver.disconnect();
+        setTimeout(() => {
+          resizeObserver.observe(document.body);
+        }, 100);
+      }
+    }
+  };
+  
+  // Create the observer with throttling pattern
+  resizeObserver = new ResizeObserver(() => {
+    if (!rafId) {
+      rafId = requestAnimationFrame(processResize);
     }
   });
   
-  // Observe the body for size changes
+  // Start observing
   resizeObserver.observe(document.body);
+  
+  // Save reference to allow cleanup if needed
+  window._popupResizeObserver = resizeObserver;
 }
 
 /**
@@ -68,10 +103,7 @@ function switchTab(tabId) {
   document.getElementById(`${tabId}-stats`).classList.add('active');
   document.getElementById(`${tabId}-tab`).classList.add('active');
   
-  // Trigger a resize to adjust size for the new tab's content
-  setTimeout(() => {
-    window.dispatchEvent(new Event('resize'));
-  }, 50);
+  // No need for manual resize event with our improved ResizeObserver
 }
 
 /**
