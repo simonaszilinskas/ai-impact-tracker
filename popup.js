@@ -2,18 +2,42 @@
  * AI Impact Tracker - Popup UI Script
  * =======================================
  * This script handles the popup UI functionality including loading,
- * displaying, exporting, and clearing usage logs.
+ * displaying usage logs and environmental metrics.
  */
 
 document.addEventListener('DOMContentLoaded', function() {
   // Load and display the logs when the popup opens
   loadLogs();
   
-  // Set up event listeners for UI controls
-  document.getElementById('refresh-btn').addEventListener('click', loadLogs);
-  document.getElementById('export-btn').addEventListener('click', exportLogs);
-  document.getElementById('clear-btn').addEventListener('click', clearLogs);
+  // Set up tab switching
+  document.getElementById('lifetime-tab').addEventListener('click', function() {
+    switchTab('lifetime');
+  });
+  
+  document.getElementById('today-tab').addEventListener('click', function() {
+    switchTab('today');
+  });
 });
+
+/**
+ * Switches between lifetime and today tabs
+ * @param {string} tabId - The ID of the tab to switch to ('lifetime' or 'today')
+ */
+function switchTab(tabId) {
+  // Hide all tabs
+  document.querySelectorAll('.stats-container').forEach(container => {
+    container.classList.remove('active');
+  });
+  
+  // Remove active class from all tab buttons
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Show the selected tab
+  document.getElementById(`${tabId}-stats`).classList.add('active');
+  document.getElementById(`${tabId}-tab`).classList.add('active');
+}
 
 /**
  * Loads logs from Chrome storage and updates the UI
@@ -24,6 +48,7 @@ function loadLogs() {
     updateTodayStats(logs);
     updateLifetimeStats(logs);
     renderUsageChart(logs);
+    renderHourlyChart(logs);
   });
 }
 
@@ -56,14 +81,15 @@ function updateTodayStats(logs) {
   // Update the UI
   document.getElementById('today-messages').textContent = formatNumber(todayMessages);
   document.getElementById('today-tokens').textContent = formatNumber(todayTotalTokens);
+  document.getElementById('today-energy').textContent = formatNumber(todayEnergyUsage.toFixed(2));
   
   // Calculate and update today's environmental equivalents
   const equivalents = calculateEnvironmentalEquivalents(todayEnergyUsage);
   
-  document.getElementById('equiv-electricity').textContent = `${equivalents.electricity} kWh`;
-  document.getElementById('equiv-movies').textContent = `${equivalents.movies} mins`;
-  document.getElementById('equiv-toasts').textContent = equivalents.toasts;
-  document.getElementById('equiv-laundry').textContent = equivalents.laundry;
+  document.getElementById('today-movies').textContent = `${equivalents.movies} mins`;
+  document.getElementById('today-toasts').textContent = equivalents.toasts;
+  document.getElementById('today-phones').textContent = equivalents.phones;
+  document.getElementById('today-train').textContent = `${equivalents.train} km`;
 }
 
 /**
@@ -88,14 +114,15 @@ function updateLifetimeStats(logs) {
   // Update the UI
   document.getElementById('lifetime-messages').textContent = formatNumber(totalMessages);
   document.getElementById('lifetime-tokens').textContent = formatNumber(totalTokens);
+  document.getElementById('lifetime-energy').textContent = formatNumber(totalEnergyUsage.toFixed(2));
   
   // Calculate and update lifetime environmental equivalents
   const equivalents = calculateEnvironmentalEquivalents(totalEnergyUsage);
   
-  document.getElementById('lifetime-electricity').textContent = `${equivalents.electricity} kWh`;
   document.getElementById('lifetime-movies').textContent = `${equivalents.movies} mins`;
   document.getElementById('lifetime-toasts').textContent = equivalents.toasts;
-  document.getElementById('lifetime-laundry').textContent = equivalents.laundry;
+  document.getElementById('lifetime-phones').textContent = equivalents.phones;
+  document.getElementById('lifetime-train').textContent = `${equivalents.train} km`;
 }
 
 /**
@@ -114,17 +141,18 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
   // Toasts (assuming 0.04 kWh per toast)
   const toastsToasted = Math.round(energyUsageKwh / 0.04);
   
-  // Display electricity directly in kWh
-  const electricityKwh = energyUsageKwh.toFixed(3);
+  // Phone charges (assuming 0.0088 kWh per full phone charge)
+  const phoneCharges = Math.round(energyUsageKwh / 0.0088 * 10) / 10;
   
-  // Laundry cycles (assuming 0.5 kWh per load)
-  const laundryLoads = Math.round(energyUsageKwh / 0.5 * 10) / 10;
+  // High-speed train travel (assuming 0.022 kWh per passenger-km)
+  const trainTravel = Math.round(energyUsageKwh / 0.022 * 10) / 10;
   
   return {
-    electricity: electricityKwh,
+    electricity: energyUsageKwh.toFixed(3),
     movies: movieMinutes,
     toasts: toastsToasted,
-    laundry: laundryLoads
+    phones: phoneCharges,
+    train: trainTravel
   };
 }
 
@@ -133,7 +161,7 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
  * @param {Array} logs - Array of conversation log entries
  */
 function renderUsageChart(logs) {
-  const chartContainer = document.getElementById('usage-chart');
+  const chartContainer = document.getElementById('lifetime-usage-chart');
   chartContainer.innerHTML = '';
   
   // Get date range (last 7 days)
@@ -167,7 +195,8 @@ function renderUsageChart(logs) {
     
     return {
       date: date.toLocaleDateString(),
-      totalTokens: dayUserTokens + dayAssistantTokens
+      totalTokens: dayUserTokens + dayAssistantTokens,
+      messageCount: dayLogs.length
     };
   });
   
@@ -184,7 +213,67 @@ function renderUsageChart(logs) {
     
     const tooltip = document.createElement('div');
     tooltip.className = 'chart-tooltip';
-    tooltip.textContent = `${day.date}: ${formatNumber(day.totalTokens)} tokens`;
+    tooltip.textContent = `${day.date}: ${formatNumber(day.totalTokens)} tokens (${day.messageCount} msgs)`;
+    
+    bar.appendChild(tooltip);
+    chartContainer.appendChild(bar);
+  });
+}
+
+/**
+ * Renders the hourly usage chart for today
+ * @param {Array} logs - Array of conversation log entries
+ */
+function renderHourlyChart(logs) {
+  const chartContainer = document.getElementById('hourly-usage-chart');
+  chartContainer.innerHTML = '';
+  
+  // Get today's date (midnight)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Filter logs for today only
+  const todayLogs = logs.filter(log => new Date(log.timestamp) >= today);
+  
+  // Initialize hourly data
+  const hourlyData = [];
+  for (let hour = 0; hour < 24; hour++) {
+    hourlyData.push({
+      hour: hour,
+      totalTokens: 0,
+      messageCount: 0
+    });
+  }
+  
+  // Calculate hourly usage
+  todayLogs.forEach(log => {
+    const logDate = new Date(log.timestamp);
+    const hour = logDate.getHours();
+    
+    const userTokens = log.userTokenCount || Math.ceil(log.userMessage.length / 4);
+    const assistantTokens = log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
+    
+    hourlyData[hour].totalTokens += userTokens + assistantTokens;
+    hourlyData[hour].messageCount++;
+  });
+  
+  // Find the maximum value for scaling
+  const maxTokens = Math.max(...hourlyData.map(hour => hour.totalTokens), 1);
+  
+  // Create chart bars
+  hourlyData.forEach(hourData => {
+    const barHeight = (hourData.totalTokens / maxTokens) * 100;
+    
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    bar.style.height = `${Math.max(barHeight, 4)}%`;
+    
+    const tooltip = document.createElement('div');
+    tooltip.className = 'chart-tooltip';
+    
+    // Format hour with leading zero
+    const hourStr = `${hourData.hour.toString().padStart(2, '0')}:00`;
+    tooltip.textContent = `${hourStr}: ${formatNumber(hourData.totalTokens)} tokens (${hourData.messageCount} msgs)`;
     
     bar.appendChild(tooltip);
     chartContainer.appendChild(bar);
@@ -198,78 +287,4 @@ function renderUsageChart(logs) {
  */
 function formatNumber(num) {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-/**
- * Escapes HTML special characters to prevent XSS
- * @param {string} text - Text to escape
- * @returns {string} Escaped HTML string
- */
-function escapeHtml(text) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-/**
- * Exports logs as a downloadable JSON file
- * Includes summary statistics in the exported data
- */
-function exportLogs() {
-  chrome.storage.local.get('chatgptLogs', function(result) {
-    const logs = result.chatgptLogs || [];
-    
-    if (logs.length === 0) {
-      alert('No logs to export');
-      return;
-    }
-    
-    // Calculate overall totals for the export summary
-    let totalUserTokens = 0;
-    let totalAssistantTokens = 0;
-    let totalEnergyUsage = 0;
-    let totalCO2Emissions = 0;
-    
-    logs.forEach(log => {
-      totalUserTokens += log.userTokenCount || Math.ceil(log.userMessage.length / 4);
-      totalAssistantTokens += log.assistantTokenCount || Math.ceil(log.assistantResponse.length / 4);
-      totalEnergyUsage += log.energyUsage || 0;
-      totalCO2Emissions += log.co2Emissions || 0;
-    });
-    
-    const data = JSON.stringify({
-      logs: logs,
-      exportDate: new Date().toISOString(),
-      count: logs.length,
-      totalUserTokens: totalUserTokens,
-      totalAssistantTokens: totalAssistantTokens,
-      totalEnergyUsage: totalEnergyUsage.toFixed(2),
-      totalCO2Emissions: totalCO2Emissions.toFixed(2)
-    }, null, 2);
-    
-    // Create and trigger a download
-    const blob = new Blob([data], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'chatgpt-logs.json';
-    a.click();
-    
-    URL.revokeObjectURL(url);
-  });
-}
-
-/**
- * Clears all logs from storage after confirmation
- */
-function clearLogs() {
-  if (confirm('Are you sure you want to delete all logs? This cannot be undone.')) {
-    chrome.storage.local.set({chatgptLogs: []}, function() {
-      loadLogs(); // Refresh the display
-    });
-  }
 }

@@ -16,7 +16,7 @@
     }
 
     .header {
-      background-color: #27ae60;
+      background-color: #3E7B67;
       color: white;
       padding: 14px 16px;
       display: flex;
@@ -38,7 +38,26 @@
       font-size: 22px;
     }
     
-    .today-stats {
+    .tab-container {
+      display: flex;
+      background-color: #E8EEEC;
+      padding: 8px 12px;
+      border-bottom: 1px solid #D5DFD9;
+    }
+    
+    .tab {
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    
+    .tab.active {
+      background-color: #3E7B67;
+      color: white;
+    }
+    
+    .content-section {
       background-color: white;
       border-radius: 8px;
       margin: 12px;
@@ -46,7 +65,15 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
     
-    .today-header {
+    .stats-container {
+      display: none;
+    }
+    
+    .stats-container.active {
+      display: block;
+    }
+    
+    .section-header {
       font-weight: bold;
       margin-bottom: 12px;
       font-size: 15px;
@@ -54,35 +81,48 @@
     }
     
     .usage-stats {
-      margin-bottom: 10px;
+      margin-bottom: 18px;
     }
     
     .stat-box-large {
-      padding: 12px 14px;
-      background-color: #f6f8fa;
-      border-radius: 6px;
+      padding: 16px;
       text-align: center;
       margin-bottom: 8px;
     }
     
     .stat-box {
-      padding: 6px 10px;
+      padding: 12px;
       background-color: #f6f8fa;
       border-radius: 6px;
-      text-align: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       position: relative;
+      margin-bottom: 12px;
     }
     
     .message-value {
-      font-size: 22px;
+      font-size: 32px;
       font-weight: bold;
-      color: #27ae60;
+      color: #3E7B67;
     }
     
     .token-value {
       font-size: 14px;
       font-weight: 500;
       color: #666;
+    }
+    
+    .token-item {
+      display: flex;
+      align-items: center;
+    }
+    
+    .token-divider {
+      height: 20px;
+      width: 1px;
+      background-color: #ddd;
+      margin: 0 12px;
     }
     
     .info-tooltip {
@@ -132,28 +172,14 @@
     
     .equivalence-section {
       margin-top: 16px;
+      margin-bottom: 20px;
     }
     
     .equivalence-header {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
-      margin-bottom: 10px;
-      color: #555;
-    }
-    
-    .electricity-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px;
-      background-color: #f0f9f4;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      border-left: 3px solid #27ae60;
-    }
-    
-    .electricity-item .emoji {
-      font-size: 24px;
+      margin-bottom: 12px;
+      color: #444;
     }
     
     .equivalence-grid {
@@ -166,7 +192,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 8px;
+      padding: 10px;
       background-color: #f6f8fa;
       border-radius: 6px;
     }
@@ -190,47 +216,9 @@
       color: #666;
     }
     
-    .lifetime-section {
-      background-color: white;
-      border-radius: 8px;
-      margin: 12px;
-      padding: 14px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    }
-    
-    .lifetime-header {
-      font-weight: bold;
-      margin-bottom: 12px;
-      font-size: 15px;
-      color: #444;
-    }
-    
-    .lifetime-stats {
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
-      background-color: #f6f8fa;
-      border-radius: 6px;
-      padding: 8px 12px;
-    }
-    
-    .lifetime-value {
-      font-size: 16px;
-      font-weight: bold;
-      color: #27ae60;
-    }
-    
-    .lifetime-token-count {
-      font-size: 13px;
-      color: #666;
-      margin-left: 6px;
-      display: inline-flex;
-      align-items: center;
-    }
-    
     .chart-container {
       height: 160px;
-      margin: 20px 0 10px 0;
+      margin: 12px 0;
       display: flex;
       align-items: flex-end;
       gap: 4px;
@@ -240,7 +228,7 @@
     
     .chart-bar {
       flex: 1;
-      background-color: #27ae60;
+      background-color: #3E7B67;
       border-radius: 3px 3px 0 0;
       position: relative;
       min-height: 4px;
@@ -248,7 +236,7 @@
     }
     
     .chart-bar:hover {
-      background-color: #219653;
+      background-color: #2E5B4D;
     }
     
     .chart-tooltip {
@@ -277,42 +265,44 @@
       margin-top: 5px;
       color: #888;
       font-size: 10px;
+      margin-bottom: 10px;
     }
     
-    .lifetime-equivalents {
-      margin-top: 16px;
-    }
-    
-    .controls {
+    .hourly-chart-container {
+      height: 160px;
+      margin: 12px 0;
       display: flex;
-      gap: 8px;
-      padding: 12px;
-      justify-content: center;
-      margin-top: 10px;
+      align-items: flex-end;
+      gap: 4px;
+      padding-top: 15px;
+      border-bottom: 1px solid #e0e0e0;
     }
     
-    button {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-      transition: all 0.2s;
+    .methodology-link {
+      text-align: center;
+      margin: 12px 0;
+      padding-bottom: 12px;
     }
     
-    .primary-btn {
-      background-color: #27ae60;
-      color: white;
+    .methodology-link a {
+      color: #3E7B67;
+      text-decoration: none;
+      font-size: 14px;
     }
     
-    .secondary-btn {
-      background-color: #f0f0f0;
-      color: #333;
+    .methodology-link a:hover {
+      text-decoration: underline;
     }
     
-    button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    .chart-section {
+      margin-top: 24px;
+    }
+    
+    .chart-header {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #444;
     }
   </style>
   <script src="popup.js"></script>
@@ -321,128 +311,161 @@
   <div class="header">
     <div class="header-logo">
       <div class="emoji">🌱</div>
-      <div>AI Impact Tracker</div>
+      <div>AI impact tracker</div>
     </div>
   </div>
   
-  <div class="today-stats">
-    <div class="today-header">Today:</div>
-    <div class="usage-stats">
-      <div class="stat-box-large">
-        <div class="message-value" id="today-messages">0</div>
-        <div class="stat-label">Messages Sent</div>
-      </div>
-      <div class="stat-box">
-        <div class="token-value">
-          <span id="today-tokens">0</span> tokens
-          <div class="info-tooltip">?
-            <div class="tooltip-text">Tokens are the units that AI models process text in. One token is about 4 characters or 3/4 of a word.</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="equivalence-section">
-      <div class="equivalence-header">Environmental Impact:</div>
-      
-      <div class="electricity-item">
-        <div class="emoji">⚡</div>
-        <div class="equivalence-data">
-          <div class="equivalence-value" id="equiv-electricity">0 kWh</div>
-          <div class="equivalence-label">Electricity Consumed</div>
-        </div>
-      </div>
-      
-      <div class="equivalence-grid">
-        <div class="equivalence-item">
-          <div class="emoji">🧙‍♂️</div>
-          <div class="equivalence-data">
-            <div class="equivalence-value" id="equiv-movies">0 mins</div>
-            <div class="equivalence-label">Harry Potter Streaming</div>
-          </div>
-        </div>
-        <div class="equivalence-item">
-          <div class="emoji">🍞</div>
-          <div class="equivalence-data">
-            <div class="equivalence-value" id="equiv-toasts">0</div>
-            <div class="equivalence-label">Toasts Toasted</div>
-          </div>
-        </div>
-        <div class="equivalence-item">
-          <div class="emoji">👕</div>
-          <div class="equivalence-data">
-            <div class="equivalence-value" id="equiv-laundry">0</div>
-            <div class="equivalence-label">Loads of Laundry</div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="tab-container">
+    <div class="tab active" id="lifetime-tab">Lifetime</div>
+    <div class="tab" id="today-tab">Today</div>
   </div>
   
-  <div class="lifetime-section">
-    <div class="lifetime-header">Lifetime Usage:</div>
-    
-    <div class="lifetime-stats">
-      <div class="lifetime-value" id="lifetime-messages">0</div>
-      <div class="stat-label">Total Messages</div>
-      <div class="lifetime-token-count">
-        (<span id="lifetime-tokens">0</span> tokens
-        <div class="info-tooltip">?
-          <div class="tooltip-text">Tokens are the units that AI models process text in. One token is about 4 characters or 3/4 of a word.</div>
-        </div>)
-      </div>
-    </div>
-    
-    <div class="chart-container" id="usage-chart">
-      <!-- Chart bars will be added by JavaScript -->
-    </div>
-    
-    <div class="chart-labels">
-      <div>7 days ago</div>
-      <div>Today</div>
-    </div>
-    
-    <div class="lifetime-equivalents">
-      <div class="equivalence-header">Lifetime Environmental Impact:</div>
-      
-      <div class="electricity-item">
-        <div class="emoji">⚡</div>
-        <div class="equivalence-data">
-          <div class="equivalence-value" id="lifetime-electricity">0 kWh</div>
-          <div class="equivalence-label">Total Electricity Consumed</div>
+  <!-- Lifetime Stats Container -->
+  <div id="lifetime-stats" class="stats-container active">
+    <div class="content-section">
+      <div class="usage-stats">
+        <div class="stat-box-large">
+          <div class="message-value" id="lifetime-messages">0</div>
+          <div class="stat-label">Lifetime messages sent</div>
+        </div>
+        <div class="stat-box">
+          <div class="token-item">
+            <div class="token-value">
+              <span id="lifetime-tokens">0</span> tokens
+              <div class="info-tooltip">?
+                <div class="tooltip-text">Tokens are the units that AI models process text in. One token is about 4 characters or 3/4 of a word.</div>
+              </div>
+            </div>
+          </div>
+          <div class="token-divider"></div>
+          <div class="token-value">
+            <span id="lifetime-energy">0</span> Wh of ⚡️
+          </div>
         </div>
       </div>
       
-      <div class="equivalence-grid">
-        <div class="equivalence-item">
-          <div class="emoji">🧙‍♂️</div>
-          <div class="equivalence-data">
-            <div class="equivalence-value" id="lifetime-movies">0 mins</div>
-            <div class="equivalence-label">Harry Potter Movies</div>
+      <div class="equivalence-section">
+        <div class="equivalence-header">Environmental equivalents:</div>
+        
+        <div class="equivalence-grid">
+          <div class="equivalence-item">
+            <div class="emoji">🧙‍♂️</div>
+            <div class="equivalence-data">
+              <div class="equivalence-value" id="lifetime-movies">0 mins</div>
+              <div class="equivalence-label">Harry Potter streamed</div>
+            </div>
+          </div>
+          <div class="equivalence-item">
+            <div class="emoji">🍞</div>
+            <div class="equivalence-data">
+              <div class="equivalence-value" id="lifetime-toasts">0</div>
+              <div class="equivalence-label">Toasts toasted</div>
+            </div>
+          </div>
+          <div class="equivalence-item">
+            <div class="emoji">📱</div>
+            <div class="equivalence-data">
+              <div class="equivalence-value" id="lifetime-phones">0</div>
+              <div class="equivalence-label">Phones charged</div>
+            </div>
+          </div>
+          <div class="equivalence-item">
+            <div class="emoji">🚄</div>
+            <div class="equivalence-data">
+              <div class="equivalence-value" id="lifetime-train">0 km</div>
+              <div class="equivalence-label">High-speed rail travel</div>
+            </div>
           </div>
         </div>
-        <div class="equivalence-item">
-          <div class="emoji">🍞</div>
-          <div class="equivalence-data">
-            <div class="equivalence-value" id="lifetime-toasts">0</div>
-            <div class="equivalence-label">Toasts Toasted</div>
-          </div>
+      </div>
+      
+      <div class="chart-section">
+        <div class="chart-header">Daily usage:</div>
+        <div class="chart-container" id="lifetime-usage-chart">
+          <!-- Chart bars will be added by JavaScript -->
         </div>
-        <div class="equivalence-item">
-          <div class="emoji">👕</div>
-          <div class="equivalence-data">
-            <div class="equivalence-value" id="lifetime-laundry">0</div>
-            <div class="equivalence-label">Loads of Laundry</div>
-          </div>
+        <div class="chart-labels">
+          <div>7 days ago</div>
+          <div>Today</div>
         </div>
       </div>
     </div>
   </div>
   
-  <div class="controls">
-    <button id="refresh-btn" class="primary-btn">Refresh</button>
-    <button id="export-btn" class="secondary-btn">Export Logs</button>
-    <button id="clear-btn" class="secondary-btn">Clear All</button>
+  <!-- Today Stats Container -->
+  <div id="today-stats" class="stats-container">
+    <div class="content-section">
+      <div class="usage-stats">
+        <div class="stat-box-large">
+          <div class="message-value" id="today-messages">0</div>
+          <div class="stat-label">Today's messages sent</div>
+        </div>
+        <div class="stat-box">
+          <div class="token-item">
+            <div class="token-value">
+              <span id="today-tokens">0</span> tokens
+              <div class="info-tooltip">?
+                <div class="tooltip-text">Tokens are the units that AI models process text in. One token is about 4 characters or 3/4 of a word.</div>
+              </div>
+            </div>
+          </div>
+          <div class="token-divider"></div>
+          <div class="token-value">
+            <span id="today-energy">0</span> Wh of ⚡️
+          </div>
+        </div>
+      </div>
+      
+      <div class="equivalence-section">
+        <div class="equivalence-header">Environmental equivalents:</div>
+        
+        <div class="equivalence-grid">
+          <div class="equivalence-item">
+            <div class="emoji">🧙‍♂️</div>
+            <div class="equivalence-data">
+              <div class="equivalence-value" id="today-movies">0 mins</div>
+              <div class="equivalence-label">Harry Potter streamed</div>
+            </div>
+          </div>
+          <div class="equivalence-item">
+            <div class="emoji">🍞</div>
+            <div class="equivalence-data">
+              <div class="equivalence-value" id="today-toasts">0</div>
+              <div class="equivalence-label">Toasts toasted</div>
+            </div>
+          </div>
+          <div class="equivalence-item">
+            <div class="emoji">📱</div>
+            <div class="equivalence-data">
+              <div class="equivalence-value" id="today-phones">0</div>
+              <div class="equivalence-label">Phones charged</div>
+            </div>
+          </div>
+          <div class="equivalence-item">
+            <div class="emoji">🚄</div>
+            <div class="equivalence-data">
+              <div class="equivalence-value" id="today-train">0 km</div>
+              <div class="equivalence-label">High-speed rail travel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="chart-section">
+        <div class="chart-header">Hourly Usage:</div>
+        <div class="hourly-chart-container" id="hourly-usage-chart">
+          <!-- Chart bars will be added by JavaScript -->
+        </div>
+        <div class="chart-labels">
+          <div>00:00</div>
+          <div>23:00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="methodology-link">
+    <a href="https://example.com/methodology" target="_blank">Methodology</a>
   </div>
 </body>
 </html>
