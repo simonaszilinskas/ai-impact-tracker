@@ -21,7 +21,37 @@ document.addEventListener('DOMContentLoaded', function() {
   // Set up theme toggle
   initTheme();
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  
+  // Add resize observer to adjust popup size based on content
+  adjustPopupHeight();
 });
+
+/**
+ * Adjusts the popup height to fit content without scrolling
+ */
+function adjustPopupHeight() {
+  // Dynamically adjust chart heights if needed
+  const resizeObserver = new ResizeObserver(entries => {
+    // Get the visible tab content
+    const activeTab = document.querySelector('.stats-container.active');
+    if (!activeTab) return;
+    
+    // If we detect we might need to scroll, reduce chart height
+    if (document.body.scrollHeight > window.innerHeight) {
+      const charts = document.querySelectorAll('.chart-container, .hourly-chart-container');
+      charts.forEach(chart => {
+        // Only reduce height if it's still above minimum
+        const currentHeight = parseInt(getComputedStyle(chart).height);
+        if (currentHeight > 80) {
+          chart.style.height = `${Math.max(80, currentHeight - 10)}px`;
+        }
+      });
+    }
+  });
+  
+  // Observe the body for size changes
+  resizeObserver.observe(document.body);
+}
 
 /**
  * Switches between lifetime and today tabs
@@ -41,6 +71,11 @@ function switchTab(tabId) {
   // Show the selected tab
   document.getElementById(`${tabId}-stats`).classList.add('active');
   document.getElementById(`${tabId}-tab`).classList.add('active');
+  
+  // Trigger a resize to adjust size for the new tab's content
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'));
+  }, 50);
 }
 
 /**
