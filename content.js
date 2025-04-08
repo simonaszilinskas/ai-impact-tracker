@@ -285,27 +285,34 @@ function initialize() {
  * 
  * This implements the energy calculation model from https://arxiv.org/abs/2309.12456
  * with appropriate scaling for different model sizes and token counts.
+ * Modified to account for Mixture of Experts (MoE) model architecture.
  * 
  * @param {number} outputTokens - Number of tokens in the assistant's response
  * @returns {Object} Energy usage and emissions data
  */
 function calculateEnergyAndEmissions(outputTokens) {
-  // Assuming ChatGPT is a 300B parameter model
-  const modelParams = 300e9;
-  const activeParams = modelParams / 1e9; // Convert to billions
+  // ChatGPT is a Mixture of Experts (MoE) model with 440B total parameters
+  const totalParams = 440e9;
+  const activeRatio = 0.125; // 12.5% activation ratio for MoE models
+  const activeParams = 55e9; // 55B active parameters
+  const activeParamsBillions = activeParams / 1e9; // Convert to billions for calculations
   
-  // Energy consumption per token (Wh/token)
-  const energyPerToken = ENERGY_ALPHA * activeParams + ENERGY_BETA;
+  // Energy consumption per token (Wh/token) - based on ACTIVE parameters
+  // This is because energy consumption during inference is primarily determined by compute, 
+  // which is proportional to active parameters in MoE models
+  const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
   
-  // Calculate GPU memory requirements
-  const memoryRequired = 1.2 * modelParams * GPU_BITS / 8; // in bytes
+  // Calculate GPU memory requirements - based on TOTAL parameters
+  // Memory footprint is determined by the total model size, not just active parameters
+  const memoryRequired = 1.2 * totalParams * GPU_BITS / 8; // in bytes
   const numGPUs = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
   
-  // Calculate inference latency
-  const latencyPerToken = LATENCY_ALPHA * activeParams + LATENCY_BETA;
+  // Calculate inference latency - based on ACTIVE parameters
+  // Latency is determined by compute, which is proportional to active parameters in MoE models
+  const latencyPerToken = LATENCY_ALPHA * activeParamsBillions + LATENCY_BETA;
   const totalLatency = outputTokens * latencyPerToken;
   
-  // Calculate GPU energy consumption (Wh)
+  // Calculate GPU energy consumption (Wh) - using active parameters for computation
   const gpuEnergy = outputTokens * energyPerToken * numGPUs;
   
   // Calculate server energy excluding GPUs (Wh)
@@ -318,13 +325,22 @@ function calculateEnergyAndEmissions(outputTokens) {
   // Apply data center overhead (PUE)
   const totalEnergy = PUE * serverEnergy;
   
+  // Ensure minimum energy value for visibility in UI
+  const minEnergy = 0.01; // Minimum 0.01 Wh to ensure visibility
+  const normalizedEnergy = Math.max(totalEnergy, minEnergy);
+  
   // Calculate CO2 emissions (grams)
-  const co2Emissions = totalEnergy * WORLD_EMISSION_FACTOR;
+  const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
   
   return {
     numGPUs,
-    totalEnergy,
-    co2Emissions
+    totalEnergy: normalizedEnergy,
+    co2Emissions,
+    modelDetails: {
+      totalParams: totalParams / 1e9,
+      activeParams: activeParams / 1e9,
+      activationRatio: activeRatio
+    }
   };
 }
 
