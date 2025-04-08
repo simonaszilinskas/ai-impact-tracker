@@ -5,8 +5,11 @@
   <meta charset="utf-8">
   <title>AI Impact Tracker</title>
   <style>
+    /* Google Fonts - Open Sans */
+    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap');
+    
     :root {
-      /* Light Mode Theme Colors */
+      /* Colors */
       --primary-color: #3E7B67;
       --primary-color-hover: #2E5B4D;
       --text-color: #343541;
@@ -25,52 +28,10 @@
       --link-color: var(--primary-color);
     }
 
-    /* Dark Mode */
-    :root[data-theme="dark"] {
-      --primary-color: #4E9B87;
-      --primary-color-hover: #5EBBAA;
-      --text-color: #E8E8E8;
-      --background-color: #1E1E1E;
-      --card-background: #2D2D2D;
-      --secondary-background: #333333;
-      --stat-box-background: #383838;
-      --border-color: #444444;
-      --tooltip-background: #555555;
-      --tooltip-text: #E8E8E8;
-      --muted-text: #BBBBBB;
-      --header-text: #DDDDDD;
-      --divider-color: #555555;
-      --chart-bar-color: var(--primary-color);
-      --chart-bar-hover: var(--primary-color-hover);
-      --link-color: var(--primary-color);
-    }
-    
-    /* Also support system preference */
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        --primary-color: #4E9B87;
-        --primary-color-hover: #5EBBAA;
-        --text-color: #E8E8E8;
-        --background-color: #1E1E1E;
-        --card-background: #2D2D2D;
-        --secondary-background: #333333;
-        --stat-box-background: #383838;
-        --border-color: #444444;
-        --tooltip-background: #555555;
-        --tooltip-text: #E8E8E8;
-        --muted-text: #BBBBBB;
-        --header-text: #DDDDDD;
-        --divider-color: #555555;
-        --chart-bar-color: var(--primary-color);
-        --chart-bar-hover: var(--primary-color-hover);
-        --link-color: var(--primary-color);
-      }
-    }
-
     body {
       width: 400px;
       /* Remove the max-height constraint to allow content to determine height */
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
       padding: 0;
       color: var(--text-color);
@@ -91,7 +52,7 @@
       z-index: 1000;
     }
     
-    .theme-toggle {
+    .info-icon {
       cursor: pointer;
       font-size: 18px;
       padding: 4px 8px;
@@ -99,7 +60,7 @@
       transition: background-color 0.2s;
     }
     
-    .theme-toggle:hover {
+    .info-icon:hover {
       background-color: rgba(255, 255, 255, 0.2);
     }
     
@@ -395,7 +356,7 @@
       <div class="emoji">🌱</div>
       <div>AI impact tracker</div>
     </div>
-    <div class="theme-toggle" id="theme-toggle">🌓</div>
+    <a href="https://example.com/methodology" target="_blank" class="info-icon" title="View methodology">ℹ️</a>
   </div>
   
   <div class="tab-container">
@@ -418,7 +379,12 @@
           <div class="emoji">⚡️</div>
           <div class="stat-data">
             <div class="message-value" id="lifetime-energy">0</div>
-            <div class="stat-label">Watt-hours used</div>
+            <div class="stat-label">
+              Watt-hours used
+              <div class="info-tooltip">?
+                <div class="tooltip-text">This is an estimate based on typical energy usage patterns for AI models.</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -486,7 +452,12 @@
           <div class="emoji">⚡️</div>
           <div class="stat-data">
             <div class="message-value" id="today-energy">0</div>
-            <div class="stat-label">Watt-hours used</div>
+            <div class="stat-label">
+              Watt-hours used
+              <div class="info-tooltip">?
+                <div class="tooltip-text">This is an estimate based on typical energy usage patterns for AI models.</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -539,8 +510,5 @@
     </div>
   </div>
   
-  <div class="methodology-link">
-    <a href="https://example.com/methodology" target="_blank">Methodology</a>
-  </div>
 </body>
 </html>

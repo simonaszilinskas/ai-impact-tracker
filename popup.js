@@ -18,10 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
     switchTab('today');
   });
   
-  // Set up theme toggle
-  initTheme();
-  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-  
   // Add resize observer to adjust popup size based on content
   adjustPopupHeight();
 });
@@ -309,41 +305,3 @@ function formatNumber(num) {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-/**
- * Initializes the theme based on saved preferences or system preferences
- */
-function initTheme() {
-  chrome.storage.local.get('theme', function(result) {
-    const savedTheme = result.theme;
-    
-    if (savedTheme === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else if (savedTheme === 'light') {
-      document.documentElement.setAttribute('data-theme', 'light');
-    } else {
-      // If no preference is saved, respect the system preference
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.setAttribute('data-theme', 'dark');
-      }
-    }
-  });
-}
-
-/**
- * Toggles between light and dark themes
- */
-function toggleTheme() {
-  const currentTheme = document.documentElement.getAttribute('data-theme');
-  let newTheme;
-  
-  if (currentTheme === 'dark') {
-    newTheme = 'light';
-  } else {
-    newTheme = 'dark';
-  }
-  
-  document.documentElement.setAttribute('data-theme', newTheme);
-  
-  // Save the theme preference
-  chrome.storage.local.set({ theme: newTheme });
-}
