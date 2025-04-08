@@ -108,15 +108,43 @@ function switchTab(tabId) {
 
 /**
  * Loads logs from Chrome storage and updates the UI
+ * Includes additional error handling and logging
  */
 function loadLogs() {
-  chrome.storage.local.get('chatgptLogs', function(result) {
-    const logs = result.chatgptLogs || [];
-    updateTodayStats(logs);
-    updateLifetimeStats(logs);
-    renderUsageChart(logs);
-    renderHourlyChart(logs);
-  });
+  try {
+    chrome.storage.local.get('chatgptLogs', function(result) {
+      if (chrome.runtime.lastError) {
+        console.error('Error loading logs:', chrome.runtime.lastError);
+        return;
+      }
+      
+      const logs = result.chatgptLogs || [];
+      console.log(`Loaded ${logs.length} logs from storage`);
+      
+      // Log some details about the logs if any exist
+      if (logs.length > 0) {
+        console.log('First log:', logs[0]);
+        console.log('Last log:', logs[logs.length - 1]);
+        
+        // Calculate total energy usage
+        const totalEnergy = logs.reduce((sum, log) => sum + (log.energyUsage || 0), 0);
+        console.log(`Total energy usage in logs: ${totalEnergy.toFixed(2)} Wh`);
+        
+        // Check for logs with missing energy values
+        const logsWithoutEnergy = logs.filter(log => log.energyUsage === undefined || log.energyUsage === null);
+        if (logsWithoutEnergy.length > 0) {
+          console.warn(`${logsWithoutEnergy.length} logs have missing energy usage values`);
+        }
+      }
+      
+      updateTodayStats(logs);
+      updateLifetimeStats(logs);
+      renderUsageChart(logs);
+      renderHourlyChart(logs);
+    });
+  } catch (e) {
+    console.error('Error in loadLogs:', e);
+  }
 }
 
 /**
@@ -156,10 +184,14 @@ function updateTodayStats(logs) {
   // Calculate and update today's environmental equivalents
   const equivalents = calculateEnvironmentalEquivalents(todayEnergyUsage);
   
+  // Update the DOM with the calculated values, ensure we have proper formatting
   document.getElementById('today-movies').textContent = `${equivalents.movies} mins`;
-  document.getElementById('today-toasts').textContent = equivalents.toasts;
-  document.getElementById('today-phones').textContent = equivalents.phones;
-  document.getElementById('today-train').textContent = `${equivalents.train} km`;
+  document.getElementById('today-toasts').textContent = formatNumber(equivalents.toasts);
+  document.getElementById('today-phones').textContent = formatNumber(equivalents.phones);
+  document.getElementById('today-train').textContent = `${formatNumber(equivalents.train)} km`;
+  
+  // Log the values for debugging
+  console.log('Today environmental equivalents:', equivalents);
 }
 
 /**
@@ -192,33 +224,59 @@ function updateLifetimeStats(logs) {
   // Calculate and update lifetime environmental equivalents
   const equivalents = calculateEnvironmentalEquivalents(totalEnergyUsage);
   
+  // Update the DOM with the calculated values, ensure we have proper formatting
   document.getElementById('lifetime-movies').textContent = `${equivalents.movies} mins`;
-  document.getElementById('lifetime-toasts').textContent = equivalents.toasts;
-  document.getElementById('lifetime-phones').textContent = equivalents.phones;
-  document.getElementById('lifetime-train').textContent = `${equivalents.train} km`;
+  document.getElementById('lifetime-toasts').textContent = formatNumber(equivalents.toasts);
+  document.getElementById('lifetime-phones').textContent = formatNumber(equivalents.phones);
+  document.getElementById('lifetime-train').textContent = `${formatNumber(equivalents.train)} km`;
+  
+  // Log the values for debugging
+  console.log('Lifetime environmental equivalents:', equivalents);
 }
 
 /**
  * Calculates environmental equivalents for a given energy usage
+ * Handles zero values appropriately
  * @param {number} energyUsageWh - Energy usage in watt-hours
  * @returns {Object} Object containing various environmental equivalents
  */
 function calculateEnvironmentalEquivalents(energyUsageWh) {
+  // Ensure we're working with a valid number
+  const validEnergyUsage = parseFloat(energyUsageWh) || 0;
+  
   // Convert Wh to kWh
-  const energyUsageKwh = energyUsageWh / 1000;
+  const energyUsageKwh = validEnergyUsage / 1000;
+  
+  // If energy usage is zero or very close to zero, return zeros for all equivalents
+  if (energyUsageKwh < 0.0001) {
+    return {
+      electricity: "0",
+      movies: 0,
+      toasts: 0,
+      phones: 0,
+      train: 0
+    };
+  }
   
   // Environmental equivalents (approximate values)
   // Harry Potter movie streaming (assuming 0.08 kWh per hour of HD streaming)
-  const movieMinutes = Math.round(energyUsageKwh / 0.08 * 60);
+  const movieMinutes = Math.max(0, Math.round(energyUsageKwh / 0.08 * 60));
   
   // Toasts (assuming 0.04 kWh per toast)
-  const toastsToasted = Math.round(energyUsageKwh / 0.04);
+  const toastsToasted = Math.max(0, Math.round(energyUsageKwh / 0.04));
   
   // Phone charges (assuming 0.0088 kWh per full phone charge)
-  const phoneCharges = Math.round(energyUsageKwh / 0.0088 * 10) / 10;
+  const phoneCharges = Math.max(0, Math.round(energyUsageKwh / 0.0088 * 10) / 10);
   
   // High-speed train travel (assuming 0.022 kWh per passenger-km)
-  const trainTravel = Math.round(energyUsageKwh / 0.022 * 10) / 10;
+  const trainTravel = Math.max(0, Math.round(energyUsageKwh / 0.022 * 10) / 10);
+  
+  console.log(`Calculating equivalents for ${validEnergyUsage}Wh (${energyUsageKwh}kWh):`, {
+    movies: movieMinutes,
+    toasts: toastsToasted,
+    phones: phoneCharges,
+    train: trainTravel
+  });
   
   return {
     electricity: energyUsageKwh.toFixed(3),
