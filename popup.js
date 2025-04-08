@@ -103,10 +103,9 @@ function updateTodayStats(logs) {
   let todayMessages = todayLogs.length;
   let todayEnergyUsage = 0;
   
-  // If no logs found, set a minimum number to demonstrate UI functionality
+  // Only use actual log data, don't add minimum values
   if (todayLogs.length === 0) {
-    // Add a minimum display value for demonstration
-    todayEnergyUsage = 0.01;
+    todayEnergyUsage = 0;
   } else {
     todayLogs.forEach(log => {
       // Ensure we have at least a minimum energy value
@@ -114,8 +113,8 @@ function updateTodayStats(logs) {
       todayEnergyUsage += logEnergy;
     });
     
-    // Ensure minimum value for UI visibility (0.01 Wh)
-    todayEnergyUsage = Math.max(todayEnergyUsage, 0.01);
+    // Use actual value, no minimum threshold
+    todayEnergyUsage = todayEnergyUsage;
   }
   
   // Update the UI
@@ -140,10 +139,9 @@ function updateLifetimeStats(logs) {
   let totalMessages = logs.length;
   let totalEnergyUsage = 0;
   
-  // If no logs found, set a minimum number to demonstrate UI functionality
+  // Only use actual log data, don't add minimum values
   if (logs.length === 0) {
-    // Add a minimum display value for demonstration
-    totalEnergyUsage = 0.01;
+    totalEnergyUsage = 0;
   } else {
     logs.forEach(log => {
       // Ensure we have at least a minimum energy value
@@ -151,8 +149,8 @@ function updateLifetimeStats(logs) {
       totalEnergyUsage += logEnergy;
     });
     
-    // Ensure minimum value for UI visibility (0.01 Wh)
-    totalEnergyUsage = Math.max(totalEnergyUsage, 0.01);
+    // Use actual value, no minimum threshold
+    totalEnergyUsage = totalEnergyUsage;
   }
   
   // Update the UI
