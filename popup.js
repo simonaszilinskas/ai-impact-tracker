@@ -291,19 +291,19 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
     };
   }
   
-  // Environmental equivalents (approximate values)
-  // Harry Potter movie streaming (assuming 0.08 kWh per hour of HD streaming)
-  const movieMinutes = Math.max(0, Math.round(energyUsageKwh / 0.08 * 60));
+  // Environmental equivalents based on methodology.md
+  // YouTube video streaming (0.25 Wh per minute of standard definition streaming)
+  const movieMinutes = Math.max(0, Math.round(validEnergyUsage / 0.25));
   
-  // Toasts (assuming 0.04 kWh per toast)
-  const toastsToasted = Math.max(0, Math.round(energyUsageKwh / 0.04));
-  console.log(`Calculated toasts: ${energyUsageKwh} kWh / 0.04 = ${toastsToasted} toasts`);
+  // Toasts (30-33 Wh per slice of toast)
+  const toastsToasted = Math.max(0, Math.round(validEnergyUsage / 33 * 10) / 10);
+  console.log(`Calculated toasts: ${validEnergyUsage} Wh / 33 = ${toastsToasted} toasts`);
   
-  // Phone charges (assuming 0.0088 kWh per full phone charge)
-  const phoneCharges = Math.max(0, Math.round(energyUsageKwh / 0.0088 * 10) / 10);
+  // Phone charges (10-15 Wh per full charge)
+  const phoneCharges = Math.max(0, Math.round(validEnergyUsage / 13.5 * 10) / 10);
   
-  // High-speed train travel (assuming 0.022 kWh per passenger-km)
-  const trainTravel = Math.max(0, Math.round(energyUsageKwh / 0.022 * 10) / 10);
+  // High-speed train travel (20-30 Wh per passenger-kilometer)
+  const trainTravel = Math.max(0, Math.round(validEnergyUsage / 25 * 10) / 10);
   
   console.log(`Calculating equivalents for ${validEnergyUsage}Wh (${energyUsageKwh}kWh):`, {
     movies: movieMinutes,
