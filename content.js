@@ -370,100 +370,59 @@ function createUsageNotification() {
   styles.textContent = `
     .ai-impact-notification {
       position: fixed;
-      top: 12px;
-      right: 20px;
-      background-color: #3E7B67;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 8px;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: white;
+      color: #333;
+      padding: 8px 14px;
+      border-radius: 6px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      font-size: 14px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      font-size: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       z-index: 10000;
       transition: all 0.3s ease;
       cursor: pointer;
       line-height: 1.4;
-      max-width: 280px;
+      max-width: 400px;
     }
     
     .ai-impact-notification:hover {
-      background-color: #2E5B4D;
-    }
-    
-    .ai-impact-notification.collapsed {
-      width: 40px;
-      height: 40px;
-      padding: 0;
-      justify-content: center;
-      border-radius: 50%;
-      overflow: hidden;
-    }
-    
-    .ai-impact-notification.collapsed .ai-impact-content {
-      display: none;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
     }
     
     .ai-impact-icon {
-      font-size: 18px;
+      font-size: 14px;
+      color: #3E7B67;
     }
     
     .ai-impact-content {
       flex: 1;
     }
     
-    .ai-impact-title {
-      font-weight: 600;
-      margin-bottom: 2px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .ai-impact-message {
+      font-size: 12px;
     }
     
-    .ai-impact-status {
-      font-size: 13px;
-      opacity: 0.9;
-    }
-    
-    .ai-impact-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 11px;
+    .ai-impact-energy {
       font-weight: 500;
-      margin-left: 6px;
-    }
-    
-    .ai-impact-badge.light {
-      background-color: #9FE2C4;
-      color: #1A3B2D;
-    }
-    
-    .ai-impact-badge.medium {
-      background-color: #FFC107;
-      color: #6D4C00;
-    }
-    
-    .ai-impact-badge.heavy {
-      background-color: #FF5722;
-      color: #5F2100;
     }
     
     .ai-impact-close {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-left: 8px;
-      width: 18px;
-      height: 18px;
+      margin-left: 6px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
-      background-color: rgba(255, 255, 255, 0.2);
-      font-size: 12px;
+      background-color: rgba(0, 0, 0, 0.05);
+      font-size: 10px;
       line-height: 1;
+      color: #666;
       opacity: 0.8;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -472,59 +431,42 @@ function createUsageNotification() {
     
     .ai-impact-close:hover {
       opacity: 1;
-      background-color: rgba(255, 255, 255, 0.3);
+      background-color: rgba(0, 0, 0, 0.1);
     }
     
     /* Make the notification adapt to the dark mode of ChatGPT */
     .dark .ai-impact-notification {
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      background-color: #343541;
+      color: #ECECF1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+    
+    .dark .ai-impact-close {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #ccc;
+    }
+    
+    .dark .ai-impact-close:hover {
+      background-color: rgba(255, 255, 255, 0.15);
     }
     
     /* Responsive adjustments */
     @media (max-width: 768px) {
       .ai-impact-notification {
-        top: auto;
-        bottom: 12px;
-        right: 12px;
-        max-width: calc(100% - 24px);
-        font-size: 13px;
+        max-width: 90%;
+        font-size: 11px;
       }
-    }
-    
-    /* Toggle button for collapsing/expanding */
-    .ai-impact-toggle {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-      cursor: pointer;
-      opacity: 0;
-    }
-    
-    /* Mini mode for collapsed state */
-    .ai-impact-mini {
-      display: none;
-      font-size: 18px;
-    }
-    
-    .ai-impact-notification.collapsed .ai-impact-mini {
-      display: block;
     }
   `;
   
-  // Populate the notification content
+  // Default basic message
+  let message = "AI models have an environmental impact";
+  
+  // Initially populate with basic message
   notification.innerHTML = `
     <div class="ai-impact-icon">🌱</div>
     <div class="ai-impact-content">
-      <div class="ai-impact-title">
-        AI Impact Tracker
-        <span id="ai-impact-badge" class="ai-impact-badge light">Light user</span>
-      </div>
-      <div id="ai-impact-status" class="ai-impact-status">
-        Click for today's impact stats
-      </div>
+      <div id="ai-impact-message" class="ai-impact-message">${message}</div>
     </div>
     <div class="ai-impact-close" id="ai-impact-close">&times;</div>
   `;
@@ -549,23 +491,28 @@ function createUsageNotification() {
   closeButton.addEventListener('click', (e) => {
     e.stopPropagation();
     
-    if (confirm('Hide AI Impact reminder for this session? You can still access the tracking info from the extension icon.')) {
-      // Hide for 24 hours
-      const hideUntil = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
-      localStorage.setItem('ai_impact_hide_until', hideUntil);
-      
-      // Remove the notification
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
+    // Hide for 24 hours without confirmation (more elegant UX)
+    const hideUntil = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+    localStorage.setItem('ai_impact_hide_until', hideUntil);
+    
+    // Remove the notification
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
     }
   });
   
   // Add the styles to the head
   document.head.appendChild(styles);
   
-  // Add the notification to the body
-  document.body.appendChild(notification);
+  // Find the right position in ChatGPT's UI to insert the notification
+  const mainHeader = document.querySelector('header');
+  if (mainHeader) {
+    // Try to insert after the header for better integration
+    mainHeader.parentNode.insertBefore(notification, mainHeader.nextSibling);
+  } else {
+    // Fallback to body if header not found
+    document.body.appendChild(notification);
+  }
   
   console.log("AI Impact notification added to page");
   
@@ -577,10 +524,9 @@ function createUsageNotification() {
  * Updates the notification with the current user's usage level
  */
 function updateUsageNotification() {
-  const badgeElement = document.getElementById('ai-impact-badge');
-  const statusElement = document.getElementById('ai-impact-status');
+  const messageElement = document.getElementById('ai-impact-message');
   
-  if (!badgeElement || !statusElement) {
+  if (!messageElement) {
     return;
   }
   
@@ -601,24 +547,21 @@ function updateUsageNotification() {
   const LIGHT_THRESHOLD = 5; // Wh
   const MEDIUM_THRESHOLD = 20; // Wh
   
-  // Determine user category
-  let category = 'light';
-  let message = 'Use AI consciously - light impact so far';
+  // Format energy usage for display (1 decimal place)
+  const formattedEnergy = todayEnergyUsage.toFixed(1);
   
+  // Default message for all usage levels
+  let message = "AI models have an environmental impact";
+  
+  // Add energy usage info for medium and heavy users
   if (todayEnergyUsage > MEDIUM_THRESHOLD) {
-    category = 'heavy';
-    message = `Heavy impact today (${todayMessages} messages)`;
+    message = `Today your messages required an estimated <span class="ai-impact-energy">${formattedEnergy} Wh</span> of electricity`;
   } else if (todayEnergyUsage > LIGHT_THRESHOLD) {
-    category = 'medium';
-    message = `Moderate impact today (${todayMessages} messages)`;
-  } else {
-    message = `Light impact so far (${todayMessages} messages)`;
+    message = `Today your messages required an estimated <span class="ai-impact-energy">${formattedEnergy} Wh</span> of electricity`;
   }
   
   // Update the UI
-  badgeElement.className = `ai-impact-badge ${category}`;
-  badgeElement.textContent = `${category.charAt(0).toUpperCase() + category.slice(1)} user`;
-  statusElement.textContent = message;
+  messageElement.innerHTML = message;
 }
 
 /**
