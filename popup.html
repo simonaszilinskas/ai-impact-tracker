@@ -367,6 +367,32 @@
       margin-bottom: 8px;
       color: var(--header-text);
     }
+    
+    /* Settings container styles */
+    .settings-container {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+    }
+    
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--text-color);
+      user-select: none;
+    }
+    
+    .toggle-text {
+      margin-left: 5px;
+    }
+    
+    #notification-toggle {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
   </style>
   <script src="popup.js"></script>
 </head>
@@ -382,6 +408,12 @@
   <div class="tab-container">
     <div class="tab active" id="lifetime-tab">Lifetime</div>
     <div class="tab" id="today-tab">Today</div>
+    <div class="settings-container">
+      <label class="toggle-label" for="notification-toggle">
+        <input type="checkbox" id="notification-toggle" checked>
+        <span class="toggle-text">Show Banner</span>
+      </label>
+    </div>
   </div>
   
   <!-- Lifetime Stats Container -->

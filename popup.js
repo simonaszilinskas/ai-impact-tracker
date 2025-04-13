@@ -18,6 +18,31 @@ document.addEventListener('DOMContentLoaded', function() {
     switchTab('today');
   });
   
+  // Set up notification toggle
+  const notificationToggle = document.getElementById('notification-toggle');
+  
+  // Load initial toggle state
+  chrome.storage.local.get('notificationEnabled', function(result) {
+    // Default to true if setting doesn't exist
+    const isEnabled = result.notificationEnabled !== false;
+    notificationToggle.checked = isEnabled;
+  });
+  
+  // Add event listener for toggle changes
+  notificationToggle.addEventListener('change', function() {
+    const isEnabled = this.checked;
+    
+    // Save the setting
+    chrome.storage.local.set({ notificationEnabled: isEnabled });
+    
+    // Send message to update active tabs
+    chrome.tabs.query({ url: ["https://chatgpt.com/*", "https://chat.openai.com/*"] }, function(tabs) {
+      for (let tab of tabs) {
+        chrome.tabs.sendMessage(tab.id, { action: "updateNotification", enabled: isEnabled });
+      }
+    });
+  });
+  
   // Add resize observer to adjust popup size based on content
   adjustPopupHeight();
 });
