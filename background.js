@@ -14,4 +14,14 @@ chrome.runtime.onInstalled.addListener(() => {
     }
   });
 });
-  
+
+// Handle message from content script to open popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "openPopup") {
+    // Chrome doesn't allow programmatically opening the popup,
+    // but we can focus the extension's browser action
+    chrome.action.openPopup();
+    console.log("Attempted to open popup");
+    return true;
+  }
+});

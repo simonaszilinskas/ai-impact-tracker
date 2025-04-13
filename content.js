@@ -82,6 +82,8 @@ function saveLog(userMessage, assistantResponse) {
     log.userMessage.substring(0, 100) === userMessageKey
   );
   
+  let shouldUpdateNotification = false;
+  
   if (existingLogIndex !== -1) {
     // Update existing log if new response is more complete
     const existingLog = logs[existingLogIndex];
@@ -100,6 +102,7 @@ function saveLog(userMessage, assistantResponse) {
       };
       
       saveToStorage({ chatgptLogs: logs });
+      shouldUpdateNotification = true;
     }
   } else {
     // Create new log entry
@@ -118,6 +121,17 @@ function saveLog(userMessage, assistantResponse) {
     
     logs.push(logEntry);
     saveToStorage({ chatgptLogs: logs });
+    shouldUpdateNotification = true;
+  }
+  
+  // Update the notification with new usage data if it exists
+  if (shouldUpdateNotification) {
+    // Create the notification if it doesn't exist yet
+    if (!document.getElementById('ai-impact-notification')) {
+      createUsageNotification();
+    } else {
+      updateUsageNotification();
+    }
   }
 }
 
@@ -330,6 +344,284 @@ function setupObserver() {
 }
 
 /**
+ * Creates and inserts the usage notification element into the ChatGPT UI
+ */
+function createUsageNotification() {
+  // Check if notification already exists
+  if (document.getElementById('ai-impact-notification')) {
+    return;
+  }
+  
+  // Check if notification is temporarily hidden
+  const hideUntil = localStorage.getItem('ai_impact_hide_until');
+  if (hideUntil && parseInt(hideUntil) > Date.now()) {
+    // Still within the hide period
+    console.log("AI Impact notification is temporarily hidden");
+    return;
+  }
+  
+  // Create the notification element
+  const notification = document.createElement('div');
+  notification.id = 'ai-impact-notification';
+  notification.className = 'ai-impact-notification';
+  
+  // Create the styles for the notification
+  const styles = document.createElement('style');
+  styles.textContent = `
+    .ai-impact-notification {
+      position: fixed;
+      top: 12px;
+      right: 20px;
+      background-color: #3E7B67;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-size: 14px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 10000;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      line-height: 1.4;
+      max-width: 280px;
+    }
+    
+    .ai-impact-notification:hover {
+      background-color: #2E5B4D;
+    }
+    
+    .ai-impact-notification.collapsed {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+    
+    .ai-impact-notification.collapsed .ai-impact-content {
+      display: none;
+    }
+    
+    .ai-impact-icon {
+      font-size: 18px;
+    }
+    
+    .ai-impact-content {
+      flex: 1;
+    }
+    
+    .ai-impact-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .ai-impact-status {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    
+    .ai-impact-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      margin-left: 6px;
+    }
+    
+    .ai-impact-badge.light {
+      background-color: #9FE2C4;
+      color: #1A3B2D;
+    }
+    
+    .ai-impact-badge.medium {
+      background-color: #FFC107;
+      color: #6D4C00;
+    }
+    
+    .ai-impact-badge.heavy {
+      background-color: #FF5722;
+      color: #5F2100;
+    }
+    
+    .ai-impact-close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 8px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background-color: rgba(255, 255, 255, 0.2);
+      font-size: 12px;
+      line-height: 1;
+      opacity: 0.8;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    
+    .ai-impact-close:hover {
+      opacity: 1;
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Make the notification adapt to the dark mode of ChatGPT */
+    .dark .ai-impact-notification {
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .ai-impact-notification {
+        top: auto;
+        bottom: 12px;
+        right: 12px;
+        max-width: calc(100% - 24px);
+        font-size: 13px;
+      }
+    }
+    
+    /* Toggle button for collapsing/expanding */
+    .ai-impact-toggle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      cursor: pointer;
+      opacity: 0;
+    }
+    
+    /* Mini mode for collapsed state */
+    .ai-impact-mini {
+      display: none;
+      font-size: 18px;
+    }
+    
+    .ai-impact-notification.collapsed .ai-impact-mini {
+      display: block;
+    }
+  `;
+  
+  // Populate the notification content
+  notification.innerHTML = `
+    <div class="ai-impact-icon">🌱</div>
+    <div class="ai-impact-content">
+      <div class="ai-impact-title">
+        AI Impact Tracker
+        <span id="ai-impact-badge" class="ai-impact-badge light">Light user</span>
+      </div>
+      <div id="ai-impact-status" class="ai-impact-status">
+        Click for today's impact stats
+      </div>
+    </div>
+    <div class="ai-impact-close" id="ai-impact-close">&times;</div>
+  `;
+  
+  // Add event listener to open extension popup
+  notification.addEventListener('click', (e) => {
+    // Don't trigger if the close button was clicked
+    if (e.target.id === 'ai-impact-close' || e.target.closest('#ai-impact-close')) {
+      return;
+    }
+    
+    // Try to open the extension popup programmatically
+    try {
+      chrome.runtime.sendMessage({ action: "openPopup" });
+    } catch (e) {
+      console.error("Failed to open popup:", e);
+    }
+  });
+  
+  // Add event listener for close button
+  const closeButton = notification.querySelector('#ai-impact-close');
+  closeButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    
+    if (confirm('Hide AI Impact reminder for this session? You can still access the tracking info from the extension icon.')) {
+      // Hide for 24 hours
+      const hideUntil = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+      localStorage.setItem('ai_impact_hide_until', hideUntil);
+      
+      // Remove the notification
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }
+  });
+  
+  // Add the styles to the head
+  document.head.appendChild(styles);
+  
+  // Add the notification to the body
+  document.body.appendChild(notification);
+  
+  console.log("AI Impact notification added to page");
+  
+  // Initial update
+  updateUsageNotification();
+}
+
+/**
+ * Updates the notification with the current user's usage level
+ */
+function updateUsageNotification() {
+  const badgeElement = document.getElementById('ai-impact-badge');
+  const statusElement = document.getElementById('ai-impact-status');
+  
+  if (!badgeElement || !statusElement) {
+    return;
+  }
+  
+  // Get today's usage
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Filter logs for today only
+  const todayLogs = logs.filter(log => new Date(log.timestamp) >= today);
+  let todayEnergyUsage = 0;
+  let todayMessages = todayLogs.length;
+  
+  todayLogs.forEach(log => {
+    todayEnergyUsage += log.energyUsage || 0;
+  });
+  
+  // Define usage thresholds
+  const LIGHT_THRESHOLD = 5; // Wh
+  const MEDIUM_THRESHOLD = 20; // Wh
+  
+  // Determine user category
+  let category = 'light';
+  let message = 'Use AI consciously - light impact so far';
+  
+  if (todayEnergyUsage > MEDIUM_THRESHOLD) {
+    category = 'heavy';
+    message = `Heavy impact today (${todayMessages} messages)`;
+  } else if (todayEnergyUsage > LIGHT_THRESHOLD) {
+    category = 'medium';
+    message = `Moderate impact today (${todayMessages} messages)`;
+  } else {
+    message = `Light impact so far (${todayMessages} messages)`;
+  }
+  
+  // Update the UI
+  badgeElement.className = `ai-impact-badge ${category}`;
+  badgeElement.textContent = `${category.charAt(0).toUpperCase() + category.slice(1)} user`;
+  statusElement.textContent = message;
+}
+
+/**
  * Initializes the extension functionality
  */
 function initialize() {
@@ -346,8 +638,12 @@ function initialize() {
           if (result && result.chatgptLogs) {
             logs.push(...result.chatgptLogs);
             console.log(`Loaded ${result.chatgptLogs.length} conversation logs`);
+            
+            // Create notification after logs are loaded
+            createUsageNotification();
           } else {
             console.log("No existing logs found, starting fresh");
+            createUsageNotification();
           }
         } catch (innerError) {
           console.error("Error processing stored logs:", innerError);
@@ -366,6 +662,11 @@ function initialize() {
       setupFetchInterceptor();
       setupObserver();
       scanMessages(); // Initial scan
+      
+      // Create notification if not created yet
+      if (!document.getElementById('ai-impact-notification')) {
+        createUsageNotification();
+      }
     }, 1000);
   } else {
     document.addEventListener("DOMContentLoaded", () => {
@@ -373,6 +674,11 @@ function initialize() {
         setupFetchInterceptor();
         setupObserver();
         scanMessages(); // Initial scan
+        
+        // Create notification if not created yet
+        if (!document.getElementById('ai-impact-notification')) {
+          createUsageNotification();
+        }
       }, 1000);
     });
   }
@@ -397,6 +703,18 @@ function initialize() {
       setTimeout(scanMessages, 1000);
     }
   }, 1000);
+  
+  // Setup periodic notification updates (every 2 minutes)
+  // This ensures the notification reflects current usage even if the user
+  // has the page open for a long time
+  setInterval(() => {
+    if (document.getElementById('ai-impact-notification')) {
+      updateUsageNotification();
+    } else {
+      // In case the notification has been removed from the DOM for some reason
+      createUsageNotification();
+    }
+  }, 2 * 60 * 1000); // 2 minutes in milliseconds
 }
 
 /**

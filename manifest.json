@@ -3,7 +3,7 @@
     "name": "AI Impact Tracker",
     "version": "1.0",
     "description": "Estimate the energy footprint of your AI usage",
-    "permissions": ["scripting", "storage", "webRequest", "activeTab"],
+    "permissions": ["storage"],
     "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
     "background": {
       "service_worker": "background.js"
