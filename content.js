@@ -402,7 +402,7 @@ function createUsageNotification() {
       transform: translateX(-50%);
       background-color: white;
       color: #333;
-      padding: 8px 14px;
+      padding: 6px 16px;
       border-radius: 6px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       font-size: 12px;
@@ -413,9 +413,11 @@ function createUsageNotification() {
       z-index: 10000;
       transition: all 0.3s ease;
       cursor: pointer;
-      line-height: 1.4;
-      max-width: 400px;
+      line-height: 1.2;
+      max-width: 550px;
+      min-width: 300px;
       text-align: center;
+      height: 22px; /* Fixed small height */
     }
     
     .ai-impact-notification:hover {
@@ -424,16 +426,27 @@ function createUsageNotification() {
     
     .ai-impact-content {
       text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     
     .ai-impact-message {
       font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .ai-impact-energy {
       font-weight: 500;
-      display: block;
-      margin-top: 2px;
+      display: inline;
+      margin-left: 4px;
+    }
+    
+    .ai-impact-emoji {
+      margin: 0 8px;
+      color: #3E7B67;
     }
     
     /* Make the notification adapt to the dark mode of ChatGPT */
@@ -447,7 +460,21 @@ function createUsageNotification() {
     @media (max-width: 768px) {
       .ai-impact-notification {
         max-width: 90%;
+        min-width: 200px;
         font-size: 11px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .ai-impact-notification {
+        max-width: 95%;
+        min-width: 180px;
+        font-size: 10px;
+        padding: 5px 12px;
+      }
+      
+      .ai-impact-emoji {
+        margin: 0 4px;
       }
     }
   `;
@@ -567,8 +594,8 @@ function updateUsageNotification() {
     // Add a timestamp for debugging
     const updateTime = new Date().toLocaleTimeString();
     
-    // Two-sentence message with line break and timestamp
-    let message = `AI models have an environmental impact.<span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
+    // One-line message with emoji separator
+    let message = `AI models have an environmental impact <span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
     
     // Log for debugging how frequently updates occur
     console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);
