@@ -472,17 +472,37 @@ function createUsageNotification() {
     }
   });
   
-  // Add the styles to the head
-  document.head.appendChild(styles);
+  // Add the styles to the head with error handling
+  try {
+    if (document.head) {
+      document.head.appendChild(styles);
+    } else {
+      console.warn("Document head not available for styles - will retry");
+      // If head is not available yet, we'll try again later
+      setTimeout(() => {
+        if (document.head) {
+          document.head.appendChild(styles);
+        }
+      }, 500);
+    }
+  } catch (e) {
+    console.error("Error appending styles:", e);
+  }
   
   // Find the right position in ChatGPT's UI to insert the notification
-  const mainHeader = document.querySelector('header');
-  if (mainHeader) {
-    // Try to insert after the header for better integration
-    mainHeader.parentNode.insertBefore(notification, mainHeader.nextSibling);
-  } else {
-    // Fallback to body if header not found
-    document.body.appendChild(notification);
+  try {
+    const mainHeader = document.querySelector('header');
+    if (mainHeader && mainHeader.parentNode) {
+      // Try to insert after the header for better integration
+      mainHeader.parentNode.insertBefore(notification, mainHeader.nextSibling);
+    } else if (document.body) {
+      // Fallback to body if header not found
+      document.body.appendChild(notification);
+    } else {
+      console.warn("Neither header nor body available for notification insertion");
+    }
+  } catch (e) {
+    console.error("Error inserting notification:", e);
   }
   
   console.log("AI Impact notification added to page");
@@ -495,39 +515,73 @@ function createUsageNotification() {
  * Updates the notification with the current user's usage level
  */
 function updateUsageNotification() {
-  const messageElement = document.getElementById('ai-impact-message');
-  
-  if (!messageElement) {
-    return;
+  try {
+    const messageElement = document.getElementById('ai-impact-message');
+    
+    if (!messageElement) {
+      // Element not found, which could be normal if notification isn't created yet
+      return;
+    }
+    
+    // Get today's usage
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Filter logs for today only - with error handling
+    let todayLogs = [];
+    let todayEnergyUsage = 0;
+    let todayMessages = 0;
+    
+    try {
+      // Safely filter logs
+      if (Array.isArray(logs)) {
+        todayLogs = logs.filter(log => {
+          try {
+            // Handle potentially invalid log entries
+            return log && log.timestamp && new Date(log.timestamp) >= today;
+          } catch (dateError) {
+            // Skip this log entry if date parsing fails
+            return false;
+          }
+        });
+        
+        todayMessages = todayLogs.length;
+        
+        // Safely calculate energy
+        todayLogs.forEach(log => {
+          try {
+            todayEnergyUsage += log.energyUsage || 0;
+          } catch (energyError) {
+            // Skip this log if energy calculation fails
+          }
+        });
+      }
+    } catch (logsError) {
+      console.error("Error processing logs for notification:", logsError);
+      // Continue with defaults (zeros) if logs processing fails
+    }
+    
+    // Format energy usage for display (1 decimal place)
+    const formattedEnergy = todayEnergyUsage.toFixed(1);
+    
+    // Add a timestamp for debugging
+    const updateTime = new Date().toLocaleTimeString();
+    
+    // Two-sentence message with line break and timestamp
+    let message = `AI models have an environmental impact.<span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
+    
+    // Log for debugging how frequently updates occur
+    console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);
+    
+    // Update the UI with error handling
+    try {
+      messageElement.innerHTML = message;
+    } catch (updateError) {
+      console.error("Error updating notification message:", updateError);
+    }
+  } catch (error) {
+    console.error("Error in updateUsageNotification:", error);
   }
-  
-  // Get today's usage
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  // Filter logs for today only
-  const todayLogs = logs.filter(log => new Date(log.timestamp) >= today);
-  let todayEnergyUsage = 0;
-  let todayMessages = todayLogs.length;
-  
-  todayLogs.forEach(log => {
-    todayEnergyUsage += log.energyUsage || 0;
-  });
-  
-  // Format energy usage for display (1 decimal place)
-  const formattedEnergy = todayEnergyUsage.toFixed(1);
-  
-  // Add a timestamp for debugging
-  const updateTime = new Date().toLocaleTimeString();
-  
-  // Two-sentence message with line break and timestamp
-  let message = `AI models have an environmental impact.<span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
-  
-  // Log for debugging how frequently updates occur
-  console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);
-  
-  // Update the UI
-  messageElement.innerHTML = message;
 }
 
 /**
@@ -541,28 +595,43 @@ function initialize() {
         try {
           if (chrome.runtime.lastError) {
             console.error("Error loading logs:", chrome.runtime.lastError);
+            // Still create notification even if logs can't be loaded
+            setTimeout(createUsageNotification, 1000);
             return;
           }
           
-          if (result && result.chatgptLogs) {
-            logs.push(...result.chatgptLogs);
-            console.log(`Loaded ${result.chatgptLogs.length} conversation logs`);
-            
-            // Create notification after logs are loaded
-            createUsageNotification();
+          if (result && result.chatgptLogs && Array.isArray(result.chatgptLogs)) {
+            try {
+              logs.push(...result.chatgptLogs);
+              console.log(`Loaded ${result.chatgptLogs.length} conversation logs`);
+            } catch (arrayError) {
+              console.error("Error adding logs to array:", arrayError);
+              // Reset logs if there was an error
+              logs.length = 0;
+            }
           } else {
             console.log("No existing logs found, starting fresh");
-            createUsageNotification();
           }
+          
+          // Create notification after logs are loaded (or failed to load)
+          // Slight delay to ensure DOM is ready
+          setTimeout(createUsageNotification, 1000);
+          
         } catch (innerError) {
           console.error("Error processing stored logs:", innerError);
+          // Still create notification even if logs processing failed
+          setTimeout(createUsageNotification, 1000);
         }
       });
     } else {
       console.warn("Chrome storage API not available for loading logs");
+      // Still create notification even without storage
+      setTimeout(createUsageNotification, 1000);
     }
   } catch (e) {
     console.error("Failed to access storage:", e);
+    // Still create notification even if storage access failed
+    setTimeout(createUsageNotification, 1000);
   }
   
   // Setup when DOM is ready
