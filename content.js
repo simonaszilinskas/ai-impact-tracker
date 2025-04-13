@@ -352,122 +352,108 @@ function createUsageNotification() {
     return;
   }
   
-  // Check if notification is disabled in settings
-  chrome.storage.local.get('notificationEnabled', (result) => {
-    // Default to enabled if setting doesn't exist
-    const isEnabled = result.notificationEnabled !== false;
-    
-    if (!isEnabled) {
-      console.log("AI Impact notification is disabled in settings");
-      return;
+  // Create the notification element
+  const notification = document.createElement('div');
+  notification.id = 'ai-impact-notification';
+  notification.className = 'ai-impact-notification';
+  
+  // Create the styles for the notification
+  const styles = document.createElement('style');
+  styles.textContent = `
+    .ai-impact-notification {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: white;
+      color: #333;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-size: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      line-height: 1.4;
+      max-width: 400px;
+      text-align: center;
     }
     
-    // Create the notification element
-    const notification = document.createElement('div');
-    notification.id = 'ai-impact-notification';
-    notification.className = 'ai-impact-notification';
+    .ai-impact-notification:hover {
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    }
     
-    // Create the styles for the notification
-    const styles = document.createElement('style');
-    styles.textContent = `
+    .ai-impact-content {
+      text-align: center;
+    }
+    
+    .ai-impact-message {
+      font-size: 12px;
+    }
+    
+    .ai-impact-energy {
+      font-weight: 500;
+      display: block;
+      margin-top: 2px;
+    }
+    
+    /* Make the notification adapt to the dark mode of ChatGPT */
+    .dark .ai-impact-notification {
+      background-color: #343541;
+      color: #ECECF1;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
       .ai-impact-notification {
-        position: fixed;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: white;
-        color: #333;
-        padding: 8px 14px;
-        border-radius: 6px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        font-size: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        z-index: 10000;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        line-height: 1.4;
-        max-width: 400px;
+        max-width: 90%;
+        font-size: 11px;
       }
-      
-      .ai-impact-notification:hover {
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-      }
-      
-      .ai-impact-icon {
-        font-size: 14px;
-        color: #3E7B67;
-      }
-      
-      .ai-impact-content {
-        flex: 1;
-      }
-      
-      .ai-impact-message {
-        font-size: 12px;
-      }
-      
-      .ai-impact-energy {
-        font-weight: 500;
-      }
-      
-      /* Make the notification adapt to the dark mode of ChatGPT */
-      .dark .ai-impact-notification {
-        background-color: #343541;
-        color: #ECECF1;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-      }
-      
-      /* Responsive adjustments */
-      @media (max-width: 768px) {
-        .ai-impact-notification {
-          max-width: 90%;
-          font-size: 11px;
-        }
-      }
-    `;
-    
-    // Default basic message (will be updated by updateUsageNotification)
-    let message = "AI models have an environmental impact";
-    
-    // Initially populate with basic message
-    notification.innerHTML = `
-      <div class="ai-impact-icon">🌱</div>
-      <div class="ai-impact-content">
-        <div id="ai-impact-message" class="ai-impact-message">${message}</div>
-      </div>
-    `;
-    
-    // Add event listener to open extension popup
-    notification.addEventListener('click', () => {
-      // Try to open the extension popup programmatically
-      try {
-        chrome.runtime.sendMessage({ action: "openPopup" });
-      } catch (e) {
-        console.error("Failed to open popup:", e);
-      }
-    });
-    
-    // Add the styles to the head
-    document.head.appendChild(styles);
-    
-    // Find the right position in ChatGPT's UI to insert the notification
-    const mainHeader = document.querySelector('header');
-    if (mainHeader) {
-      // Try to insert after the header for better integration
-      mainHeader.parentNode.insertBefore(notification, mainHeader.nextSibling);
-    } else {
-      // Fallback to body if header not found
-      document.body.appendChild(notification);
     }
-    
-    console.log("AI Impact notification added to page");
-    
-    // Initial update
-    updateUsageNotification();
+  `;
+  
+  // Default basic message (will be updated by updateUsageNotification)
+  let message = "AI models have an environmental impact";
+  
+  // Initially populate with basic message
+  notification.innerHTML = `
+    <div class="ai-impact-content">
+      <div id="ai-impact-message" class="ai-impact-message">${message}</div>
+    </div>
+  `;
+  
+  // Add event listener to open extension popup
+  notification.addEventListener('click', () => {
+    // Try to open the extension popup programmatically
+    try {
+      chrome.runtime.sendMessage({ action: "openPopup" });
+    } catch (e) {
+      console.error("Failed to open popup:", e);
+    }
   });
+  
+  // Add the styles to the head
+  document.head.appendChild(styles);
+  
+  // Find the right position in ChatGPT's UI to insert the notification
+  const mainHeader = document.querySelector('header');
+  if (mainHeader) {
+    // Try to insert after the header for better integration
+    mainHeader.parentNode.insertBefore(notification, mainHeader.nextSibling);
+  } else {
+    // Fallback to body if header not found
+    document.body.appendChild(notification);
+  }
+  
+  console.log("AI Impact notification added to page");
+  
+  // Initial update
+  updateUsageNotification();
 }
 
 /**
@@ -496,8 +482,8 @@ function updateUsageNotification() {
   // Format energy usage for display (1 decimal place)
   const formattedEnergy = todayEnergyUsage.toFixed(1);
   
-  // Base message showing environmental impact and current usage
-  let message = `AI models have an environmental impact - <span class="ai-impact-energy">${formattedEnergy} Wh</span> consumed today`;
+  // Two-sentence message with line break
+  let message = `AI models have an environmental impact.<span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
   
   // Update the UI
   messageElement.innerHTML = message;
@@ -599,6 +585,25 @@ function initialize() {
   }, 2 * 60 * 1000); // 2 minutes in milliseconds
 }
 
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "updateNotification") {
+    if (message.enabled) {
+      // Show the notification if it doesn't exist
+      if (!document.getElementById('ai-impact-notification')) {
+        createUsageNotification();
+      }
+    } else {
+      // Hide the notification if it exists
+      const notification = document.getElementById('ai-impact-notification');
+      if (notification) {
+        notification.parentNode.removeChild(notification);
+      }
+    }
+    return true;
+  }
+});
+
 /**
  * Calculates energy usage and CO2 emissions based on EcoLogits methodology
  * 
@@ -662,25 +667,6 @@ function calculateEnergyAndEmissions(outputTokens) {
     }
   };
 }
-
-// Listen for messages from popup
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "updateNotification") {
-    if (message.enabled) {
-      // Show the notification if it doesn't exist
-      if (!document.getElementById('ai-impact-notification')) {
-        createUsageNotification();
-      }
-    } else {
-      // Hide the notification if it exists
-      const notification = document.getElementById('ai-impact-notification');
-      if (notification) {
-        notification.parentNode.removeChild(notification);
-      }
-    }
-    return true;
-  }
-});
 
 // Start the extension
 initialize();
