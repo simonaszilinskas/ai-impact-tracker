@@ -124,14 +124,12 @@ function saveLog(userMessage, assistantResponse) {
     shouldUpdateNotification = true;
   }
   
-  // Update the notification with new usage data if it exists
-  if (shouldUpdateNotification) {
-    // Create the notification if it doesn't exist yet
-    if (!document.getElementById('ai-impact-notification')) {
-      createUsageNotification();
-    } else {
-      updateUsageNotification();
-    }
+  // Always update the notification when logs change
+  // Create the notification if it doesn't exist yet
+  if (!document.getElementById('ai-impact-notification')) {
+    createUsageNotification();
+  } else {
+    updateUsageNotification();
   }
 }
 
@@ -264,6 +262,7 @@ function setupFetchInterceptor() {
               const reader = clonedResponse.body.getReader();
               const decoder = new TextDecoder();
               let buffer = '';
+              let lastUpdateTime = 0;
               
               while (true) {
                 const { done, value } = await reader.read();
@@ -279,6 +278,18 @@ function setupFetchInterceptor() {
                   conversationId = convoMatch[1];
                 }
                 
+                // Check for content updates during streaming
+                const now = Date.now();
+                if (now - lastUpdateTime > 500) { // Update every 500ms max
+                  lastUpdateTime = now;
+                  
+                  // Quick scan for updates during active generation
+                  scanMessages();
+                  
+                  // Update notification with latest data
+                  updateUsageNotification();
+                }
+                
                 // Limit buffer size
                 if (buffer.length > 100000) {
                   buffer = buffer.substring(buffer.length - 50000);
@@ -286,7 +297,10 @@ function setupFetchInterceptor() {
               }
               
               // Scan after stream completes
-              setTimeout(scanMessages, 1000);
+              setTimeout(() => {
+                scanMessages();
+                updateUsageNotification();
+              }, 1000);
             } catch {
               // Ignore stream processing errors
             }
@@ -306,10 +320,13 @@ function setupFetchInterceptor() {
  * Efficiently triggers scans only when relevant content changes
  */
 function setupObserver() {
+  // Track the time of the last update to avoid excessive updates
+  let lastUpdateTime = 0;
+  
   const observer = new MutationObserver((mutations) => {
     let shouldScan = false;
     
-    // Check if any assistant messages were added
+    // Check if any assistant messages were added or modified
     for (const mutation of mutations) {
       if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
         for (const node of mutation.addedNodes) {
@@ -320,6 +337,10 @@ function setupObserver() {
             break;
           }
         }
+      } else if (mutation.type === 'characterData') {
+        // Text content changed inside an element
+        // This can catch typing updates on the assistant's responses
+        shouldScan = true;
       }
       
       if (shouldScan) break;
@@ -327,19 +348,33 @@ function setupObserver() {
     
     // Scan on relevant changes
     if (shouldScan) {
-      // Immediate scan for partial responses
-      scanMessages();
+      const now = Date.now();
       
-      // Delayed scans for completed responses
-      setTimeout(scanMessages, 1000);
-      setTimeout(scanMessages, 3000);
+      // Throttle updates to avoid excessive processing
+      // Update at most every 300ms during active typing/generation
+      if (now - lastUpdateTime > 300) {
+        lastUpdateTime = now;
+        
+        // Scan for new/updated content
+        scanMessages();
+        
+        // Update the notification with latest data
+        updateUsageNotification();
+      }
+      
+      // Also do delayed scans to catch fully completed responses
+      setTimeout(() => {
+        scanMessages();
+        updateUsageNotification();
+      }, 1000);
     }
   });
   
-  // Observe the entire document for changes
+  // Observe the entire document for changes, including text changes
   observer.observe(document.body, {
     childList: true,
-    subtree: true
+    subtree: true,
+    characterData: true
   });
 }
 
@@ -482,8 +517,14 @@ function updateUsageNotification() {
   // Format energy usage for display (1 decimal place)
   const formattedEnergy = todayEnergyUsage.toFixed(1);
   
-  // Two-sentence message with line break
+  // Add a timestamp for debugging
+  const updateTime = new Date().toLocaleTimeString();
+  
+  // Two-sentence message with line break and timestamp
   let message = `AI models have an environmental impact.<span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
+  
+  // Log for debugging how frequently updates occur
+  console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);
   
   // Update the UI
   messageElement.innerHTML = message;
