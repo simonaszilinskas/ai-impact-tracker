@@ -18,7 +18,11 @@ This extension tracks messages the user sends to ChatGPT, tries to catch the num
 
 - Works exclusively with ChatGPT for now, with plans to support more AI platforms
 - First version will soon be published on the Chrome Web Store
-- Actively seeking contributions from the community
+- Open to contributions 
+
+Here is the roadmap: [AI Impact Tracker Roadmap](https://github.com/users/simonaszilinskas/projects/1)
+
+Feel free to implement some of the ideas or to suggest new ones - contributions are welcome! Feel free to submit issues, feature requests, or pull requests.
 
 ## To install it 
 
@@ -32,18 +36,11 @@ This extension tracks messages the user sends to ChatGPT, tries to catch the num
 
 </div>
 
-## Roadmap
-
-Check out the ideas on the roadmap:
-[AI Impact Tracker Roadmap](https://github.com/users/simonaszilinskas/projects/1)
-
-Feel free to implement some of them or to suggest new ones - contributions are welcome! Feel free to submit issues, feature requests, or pull requests.
-
 ## Contact
 
 <div align="center">
 
-The project is mainly being vibe coded by Simon:
+The project is mainly being vibe coded by:
 
 [simon@tortue.studio](mailto:simon@tortue.studio)  
 [https://www.linkedin.com/in/simonaszilinskas/](https://www.linkedin.com/in/simonaszilinskas/)
