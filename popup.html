@@ -6,10 +6,9 @@
   <title>AI Impact Tracker</title>
   <!-- Remix Icon CSS -->
   <link href="https://cdn.jsdelivr.net/npm/remixicon@2.5.0/fonts/remixicon.css" rel="stylesheet">
+  <!-- Inter Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Google Fonts - Open Sans */
-    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap');
-    
     :root {
       /* Colors */
       --primary-color: #3E7B67;
@@ -17,8 +16,8 @@
       --text-color: #343541;
       --background-color: #f7f7f8;
       --card-background: white;
-      --secondary-background: #E8EEEC;
-      --stat-box-background: #f6f8fa;
+      --secondary-background: transparent;
+      --stat-box-background: transparent;
       --border-color: #D5DFD9;
       --tooltip-background: #333;
       --tooltip-text: white;
@@ -32,13 +31,11 @@
 
     body {
       width: 400px;
-      /* Remove the max-height constraint to allow content to determine height */
-      font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
       padding: 0;
       color: var(--text-color);
       background-color: var(--background-color);
-      /* Add minimal padding at bottom for better UX */
       padding-bottom: 16px;
     }
 
@@ -96,7 +93,7 @@
     
     .tab-container {
       display: flex;
-      background-color: var(--secondary-background);
+      background-color: transparent;
       padding: 8px 12px;
       border-bottom: 1px solid var(--border-color);
     }
@@ -145,12 +142,10 @@
     
     .stat-box {
       padding: 12px;
-      background-color: var(--stat-box-background);
       border-radius: 6px;
       display: flex;
       align-items: center;
       position: relative;
-      margin-bottom: 10px;
       gap: 10px;
     }
     
@@ -279,68 +274,6 @@
       color: var(--muted-text);
     }
     
-    .chart-container {
-      height: 120px; /* Reduced from 160px to make it more compact */
-      margin: 10px 0;
-      display: flex;
-      align-items: flex-end;
-      gap: 4px;
-      padding-top: 15px;
-      border-bottom: 1px solid var(--divider-color);
-    }
-    
-    .chart-bar {
-      flex: 1;
-      background-color: var(--chart-bar-color);
-      border-radius: 3px 3px 0 0;
-      position: relative;
-      min-height: 4px;
-      transition: height 0.3s ease;
-    }
-    
-    .chart-bar:hover {
-      background-color: var(--chart-bar-hover);
-    }
-    
-    .chart-tooltip {
-      position: absolute;
-      top: -25px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: var(--tooltip-background);
-      color: var(--tooltip-text);
-      padding: 3px 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      opacity: 0;
-      transition: opacity 0.2s;
-      pointer-events: none;
-      white-space: nowrap;
-    }
-    
-    .chart-bar:hover .chart-tooltip {
-      opacity: 1;
-    }
-    
-    .chart-labels {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 5px;
-      color: var(--muted-text);
-      font-size: 10px;
-      margin-bottom: 10px;
-    }
-    
-    .hourly-chart-container {
-      height: 120px; /* Reduced from 160px to make it more compact */
-      margin: 10px 0;
-      display: flex;
-      align-items: flex-end;
-      gap: 4px;
-      padding-top: 15px;
-      border-bottom: 1px solid var(--divider-color);
-    }
-    
     .methodology-link {
       text-align: center;
       margin: 12px 0;
@@ -355,17 +288,6 @@
     
     .methodology-link a:hover {
       text-decoration: underline;
-    }
-    
-    .chart-section {
-      margin-top: 16px;
-    }
-    
-    .chart-header {
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: var(--header-text);
     }
     
   </style>
@@ -444,17 +366,6 @@
           </div>
         </div>
       </div>
-      
-      <div class="chart-section">
-        <div class="chart-header">Daily energy impact from messages:</div>
-        <div class="chart-container" id="lifetime-usage-chart">
-          <!-- Chart bars will be added by JavaScript -->
-        </div>
-        <div class="chart-labels">
-          <div>7 days ago</div>
-          <div>Today</div>
-        </div>
-      </div>
     </div>
   </div>
   
@@ -515,17 +426,6 @@
               <div class="equivalence-label">High-speed rail travel</div>
             </div>
           </div>
-        </div>
-      </div>
-      
-      <div class="chart-section">
-        <div class="chart-header">Hourly energy impact from messages:</div>
-        <div class="hourly-chart-container" id="hourly-usage-chart">
-          <!-- Chart bars will be added by JavaScript -->
-        </div>
-        <div class="chart-labels">
-          <div>00:00</div>
-          <div>23:00</div>
         </div>
       </div>
     </div>
