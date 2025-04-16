@@ -18,6 +18,7 @@
       --card-background: white;
       --secondary-background: transparent;
       --stat-box-background: transparent;
+      --equiv-item-background: #f6f8fa;
       --border-color: #D5DFD9;
       --tooltip-background: #333;
       --tooltip-text: white;
@@ -27,6 +28,8 @@
       --chart-bar-color: var(--primary-color);
       --chart-bar-hover: var(--primary-color-hover);
       --link-color: var(--primary-color);
+      --tab-active-background: rgba(62, 123, 103, 0.1);
+      --tab-active-color: var(--primary-color);
     }
 
     body {
@@ -40,8 +43,8 @@
     }
 
     .header {
-      background-color: var(--primary-color);
-      color: var(--tooltip-text);
+      background-color: var(--background-color);
+      color: var(--text-color);
       padding: 14px 16px;
       display: flex;
       align-items: center;
@@ -49,6 +52,7 @@
       position: sticky;
       top: 0;
       z-index: 1000;
+      border-bottom: 1px solid var(--border-color);
     }
     
     .info-icon {
@@ -64,11 +68,11 @@
     
     .info-icon i {
       font-size: 20px;
-      color: var(--tooltip-text);
+      color: var(--primary-color);
     }
     
     .info-icon:hover {
-      background-color: rgba(255, 255, 255, 0.2);
+      background-color: rgba(62, 123, 103, 0.1);
       text-decoration: none;
     }
     
@@ -88,26 +92,34 @@
     
     .header-logo .icon i {
       font-size: 22px;
-      color: var(--tooltip-text);
+      color: var(--primary-color);
     }
     
     .tab-container {
       display: flex;
-      background-color: transparent;
+      background-color: var(--background-color);
       padding: 8px 12px;
       border-bottom: 1px solid var(--border-color);
+      gap: 8px;
     }
     
     .tab {
       padding: 8px 16px;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 6px;
       font-weight: 500;
+      transition: all 0.2s ease;
+      position: relative;
     }
     
     .tab.active {
-      background-color: var(--primary-color);
-      color: var(--tooltip-text);
+      background-color: var(--tab-active-background);
+      color: var(--tab-active-color);
+      font-weight: 600;
+    }
+    
+    .tab:hover:not(.active) {
+      background-color: rgba(0,0,0,0.03);
     }
     
     .content-section {
@@ -251,7 +263,7 @@
       align-items: center;
       gap: 8px;
       padding: 10px;
-      background-color: var(--stat-box-background);
+      background-color: var(--equiv-item-background);
       border-radius: 6px;
     }
     
