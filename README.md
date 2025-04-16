@@ -13,7 +13,8 @@ A browser extension (for now only Chrome) that estimates the environmental impac
   </a>
 </div>
 
-<img src="https://github.com/user-attachments/assets/b62fb835-b76c-4093-910b-6e840abe692f" width="600px" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+
+<img src="https://github.com/user-attachments/assets/370b8f74-5eba-46f5-a22d-549ad0dd26a7" width="600px" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 </div>
 
 ## How it works
