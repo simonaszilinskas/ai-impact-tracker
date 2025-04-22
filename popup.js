@@ -175,13 +175,13 @@ function updateTodayStats(logs) {
     // Update each element individually with error handling
     document.getElementById('today-movies').textContent = `${equivalents.movies} mins`;
     
-    // Special handling for toasts with explicit debugging
-    const todayToastElement = document.getElementById('today-toasts');
-    if (todayToastElement) {
-      console.log('Updating today toasts element:', todayToastElement, 'with value:', equivalents.toasts);
-      todayToastElement.textContent = formatNumber(equivalents.toasts);
+    // Special handling for water consumption with explicit debugging
+    const todayWaterElement = document.getElementById('today-toasts');
+    if (todayWaterElement) {
+      console.log('Updating today water consumption element:', todayWaterElement, 'with value:', equivalents.water);
+      todayWaterElement.textContent = formatNumber(equivalents.water.toFixed(6));
     } else {
-      console.error('Today toast element not found! Check the ID in HTML.');
+      console.error('Today water consumption element not found! Check the ID in HTML.');
     }
     
     document.getElementById('today-phones').textContent = formatNumber(equivalents.phones);
@@ -229,13 +229,13 @@ function updateLifetimeStats(logs) {
     // Update each element individually with error handling
     document.getElementById('lifetime-movies').textContent = `${equivalents.movies} mins`;
     
-    // Special handling for toasts with explicit debugging
-    const toastElement = document.getElementById('lifetime-toasts');
-    if (toastElement) {
-      console.log('Updating toasts element:', toastElement, 'with value:', equivalents.toasts);
-      toastElement.textContent = formatNumber(equivalents.toasts);
+    // Special handling for water consumption with explicit debugging
+    const waterElement = document.getElementById('lifetime-toasts');
+    if (waterElement) {
+      console.log('Updating water consumption element:', waterElement, 'with value:', equivalents.water);
+      waterElement.textContent = formatNumber(equivalents.water.toFixed(6));
     } else {
-      console.error('Toast element not found! Check the ID in HTML.');
+      console.error('Water consumption element not found! Check the ID in HTML.');
     }
     
     document.getElementById('lifetime-phones').textContent = formatNumber(equivalents.phones);
@@ -271,7 +271,7 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
     return {
       electricity: "0",
       movies: 0,
-      toasts: 0,
+      water: 0,
       phones: 0,
       train: 0
     };
@@ -281,9 +281,11 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
   // YouTube video streaming (0.25 Wh per minute of standard definition streaming)
   const movieMinutes = Math.max(0, Math.round(validEnergyUsage / 0.25));
   
-  // Toasts (30-33 Wh per slice of toast)
-  const toastsToasted = Math.max(0, Math.round(validEnergyUsage / 33 * 10) / 10);
-  console.log(`Calculated toasts: ${validEnergyUsage} Wh / 33 = ${toastsToasted} toasts`);
+  // Water consumption calculation (liters)
+  // Water_Consumption_Liters = (Energy_Wh / 1000) * WUE_L_per_kWh
+  // Using WUE of 0.2 L/kWh for Azure data centers
+  const waterConsumptionLiters = Math.max(0, (validEnergyUsage / 1000) * 0.2);
+  console.log(`Calculated water consumption: (${validEnergyUsage} Wh / 1000) * 0.2 = ${waterConsumptionLiters.toFixed(6)} liters`);
   
   // Phone charges (10-15 Wh per full charge)
   const phoneCharges = Math.max(0, Math.round(validEnergyUsage / 13.5 * 10) / 10);
@@ -293,7 +295,7 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
   
   console.log(`Calculating equivalents for ${validEnergyUsage}Wh (${energyUsageKwh}kWh):`, {
     movies: movieMinutes,
-    toasts: toastsToasted,
+    water: waterConsumptionLiters,
     phones: phoneCharges,
     train: trainTravel
   });
@@ -301,7 +303,7 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
   return {
     electricity: energyUsageKwh.toFixed(3),
     movies: movieMinutes,
-    toasts: toastsToasted,
+    water: waterConsumptionLiters,
     phones: phoneCharges,
     train: trainTravel
   };
