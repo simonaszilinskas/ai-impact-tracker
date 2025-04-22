@@ -615,76 +615,29 @@ function updateUsageNotification() {
  * Initializes the extension functionality
  */
 function initialize() {
-  // Load existing logs from storage with error handling
-  try {
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get('chatgptLogs', (result) => {
-        try {
-          if (chrome.runtime.lastError) {
-            console.error("Error loading logs:", chrome.runtime.lastError);
-            // Still create notification even if logs can't be loaded
-            setTimeout(createUsageNotification, 1000);
-            return;
-          }
-          
-          if (result && result.chatgptLogs && Array.isArray(result.chatgptLogs)) {
-            try {
-              logs.push(...result.chatgptLogs);
-              console.log(`Loaded ${result.chatgptLogs.length} conversation logs`);
-            } catch (arrayError) {
-              console.error("Error adding logs to array:", arrayError);
-              // Reset logs if there was an error
-              logs.length = 0;
-            }
-          } else {
-            console.log("No existing logs found, starting fresh");
-          }
-          
-          // Create notification after logs are loaded (or failed to load)
-          // Slight delay to ensure DOM is ready
-          setTimeout(createUsageNotification, 1000);
-          
-        } catch (innerError) {
-          console.error("Error processing stored logs:", innerError);
-          // Still create notification even if logs processing failed
-          setTimeout(createUsageNotification, 1000);
-        }
-      });
-    } else {
-      console.warn("Chrome storage API not available for loading logs");
-      // Still create notification even without storage
-      setTimeout(createUsageNotification, 1000);
-    }
-  } catch (e) {
-    console.error("Failed to access storage:", e);
-    // Still create notification even if storage access failed
-    setTimeout(createUsageNotification, 1000);
-  }
+  // Load existing logs from storage with improved error handling and retry
+  initializeWithRetry(3);
+  
+  // Setup periodic storage validation to fix potential issues
+  setInterval(validateAndRepairStorage, 5 * 60 * 1000); // Every 5 minutes
   
   // Setup when DOM is ready
+  const setupUI = () => {
+    setupFetchInterceptor();
+    setupObserver();
+    scanMessages(); // Initial scan
+    
+    // Create notification if not created yet
+    if (!document.getElementById('ai-impact-notification')) {
+      createUsageNotification();
+    }
+  };
+  
   if (document.readyState === "complete" || document.readyState === "interactive") {
-    setTimeout(() => {
-      setupFetchInterceptor();
-      setupObserver();
-      scanMessages(); // Initial scan
-      
-      // Create notification if not created yet
-      if (!document.getElementById('ai-impact-notification')) {
-        createUsageNotification();
-      }
-    }, 1000);
+    setTimeout(setupUI, 1000);
   } else {
     document.addEventListener("DOMContentLoaded", () => {
-      setTimeout(() => {
-        setupFetchInterceptor();
-        setupObserver();
-        scanMessages(); // Initial scan
-        
-        // Create notification if not created yet
-        if (!document.getElementById('ai-impact-notification')) {
-          createUsageNotification();
-        }
-      }, 1000);
+      setTimeout(setupUI, 1000);
     });
   }
   
@@ -803,6 +756,110 @@ function calculateEnergyAndEmissions(outputTokens) {
       activationRatio: activeRatio
     }
   };
+}
+
+/**
+ * Validates and repairs storage if needed
+ * This helps recover from corrupted/missing data
+ */
+function validateAndRepairStorage() {
+  console.log("Running storage validation check...");
+  chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], (result) => {
+    if (chrome.runtime.lastError) {
+      console.error("Error checking storage:", chrome.runtime.lastError);
+      return;
+    }
+    
+    let needsRepair = false;
+    
+    // Check if logs exists and is an array
+    if (!result.chatgptLogs || !Array.isArray(result.chatgptLogs)) {
+      console.warn("Invalid logs format in storage, needs repair");
+      needsRepair = true;
+    }
+    
+    // Check if version is missing
+    if (!result.extensionVersion) {
+      console.warn("Missing extension version in storage, will repair");
+      needsRepair = true;
+    }
+    
+    if (needsRepair) {
+      // Use in-memory logs if they exist and are valid
+      if (logs && Array.isArray(logs) && logs.length > 0) {
+        console.log("Repairing storage with in-memory logs");
+        chrome.storage.local.set({ 
+          chatgptLogs: logs,
+          extensionVersion: chrome.runtime.getManifest().version
+        });
+      } else {
+        // Otherwise initialize fresh (last resort)
+        console.log("Initializing fresh logs in storage");
+        chrome.storage.local.set({ 
+          chatgptLogs: [],
+          extensionVersion: chrome.runtime.getManifest().version
+        });
+      }
+    } else {
+      // Log storage is healthy
+      console.log("Storage validation passed - data is healthy");
+    }
+  });
+}
+
+/**
+ * Improved initialization with retry mechanism
+ * @param {number} retryCount - Number of retries left
+ */
+function initializeWithRetry(retryCount = 3) {
+  console.log(`Initializing with ${retryCount} retries remaining`);
+  try {
+    chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], (result) => {
+      // Check for runtime error
+      if (chrome.runtime.lastError) {
+        console.error("Error loading logs:", chrome.runtime.lastError);
+        if (retryCount > 0) {
+          console.log(`Retrying in 1 second (${retryCount} attempts left)...`);
+          setTimeout(() => initializeWithRetry(retryCount - 1), 1000);
+          return;
+        }
+      }
+      
+      // Store extension version for reference
+      const currentVersion = chrome.runtime.getManifest().version;
+      const storedVersion = result.extensionVersion || '0.0';
+      console.log(`Extension version: Current=${currentVersion}, Stored=${storedVersion}`);
+      
+      // Load logs with validation
+      if (result && result.chatgptLogs && Array.isArray(result.chatgptLogs)) {
+        try {
+          // Clear any potential stale data
+          logs.length = 0;
+          logs.push(...result.chatgptLogs);
+          console.log(`Loaded ${result.chatgptLogs.length} conversation logs`);
+        } catch (arrayError) {
+          console.error("Error adding logs to array:", arrayError);
+          logs.length = 0;
+        }
+      } else {
+        console.log("No existing logs found or invalid format, starting fresh");
+        logs.length = 0;
+      }
+      
+      // Create notification after logs are loaded
+      setTimeout(createUsageNotification, 500);
+    });
+  } catch (e) {
+    console.error("Critical initialization error:", e);
+    if (retryCount > 0) {
+      console.log(`Retrying in 1 second (${retryCount} attempts left)...`);
+      setTimeout(() => initializeWithRetry(retryCount - 1), 1000);
+    } else {
+      // Last resort fallback
+      logs.length = 0;
+      setTimeout(createUsageNotification, 500);
+    }
+  }
 }
 
 // Start the extension

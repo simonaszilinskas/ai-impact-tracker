@@ -100,14 +100,35 @@ function switchTab(tabId) {
  */
 function loadLogs() {
   try {
-    chrome.storage.local.get('chatgptLogs', function(result) {
+    chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], function(result) {
       if (chrome.runtime.lastError) {
         console.error('Error loading logs:', chrome.runtime.lastError);
+        // Retry once after a short delay
+        setTimeout(() => {
+          console.log('Retrying log load after error...');
+          tryLoadLogsAgain();
+        }, 500);
         return;
       }
       
       const logs = result.chatgptLogs || [];
-      console.log(`Loaded ${logs.length} logs from storage`);
+      const version = result.extensionVersion || 'unknown';
+      console.log(`Loaded ${logs.length} logs from storage (extension version: ${version})`);
+      
+      // Validate logs format
+      if (!Array.isArray(logs)) {
+        console.error('Invalid logs format in storage!');
+        // Initialize with empty array as fallback
+        updateTodayStats([]);
+        updateLifetimeStats([]);
+        
+        // Attempt to repair storage
+        chrome.storage.local.set({ 
+          chatgptLogs: [],
+          extensionVersion: chrome.runtime.getManifest().version 
+        });
+        return;
+      }
       
       // Log some details about the logs if any exist
       if (logs.length > 0) {
@@ -130,6 +151,26 @@ function loadLogs() {
     });
   } catch (e) {
     console.error('Error in loadLogs:', e);
+    // Use empty arrays as fallback
+    updateTodayStats([]);
+    updateLifetimeStats([]);
+  }
+}
+
+function tryLoadLogsAgain() {
+  try {
+    chrome.storage.local.get('chatgptLogs', function(result) {
+      const logs = Array.isArray(result.chatgptLogs) ? result.chatgptLogs : [];
+      console.log(`Retry loaded ${logs.length} logs from storage`);
+      
+      updateTodayStats(logs);
+      updateLifetimeStats(logs);
+    });
+  } catch (e) {
+    console.error('Error in retry loadLogs:', e);
+    // Use empty arrays as fallback
+    updateTodayStats([]);
+    updateLifetimeStats([]);
   }
 }
 
