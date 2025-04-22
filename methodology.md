@@ -39,16 +39,24 @@ To provide context for the energy consumed by AI interactions, the tool converts
 
 **Source**: Based on multiple peer-reviewed studies showing streaming infrastructure consumes approximately 15 Wh per hour of streaming.
 
-### Toasts toasted
+### Water consumption
 
-**Energy estimate**: ~30-33 Wh per slice of toast
+**Energy estimate**: ~0.2 L water per kWh of energy
 
 **Methodology**:
-* Based on a standard 1000W toaster
-* Average toasting time of 2 minutes (1/30 hour)
-* Calculation: 1000W × (2/60)h = ~33 Wh
+* Based on Water Usage Effectiveness (WUE) metrics from cloud data centers
+* Formula: Water_Consumption_Liters = (Energy_Wh / 1000) * WUE_L_per_kWh
+* Uses Microsoft Azure's reported average WUE of 0.2 L/kWh
 
-This is one of the most consistent metrics as toaster power consumption and toasting times are relatively standardized.
+**Sources**:
+* Microsoft Sustainability Report (2023) - https://www.microsoft.com/sustainability
+* Patterson et al. (2021) - "Carbon Emissions and Large Neural Network Training" - https://arxiv.org/abs/2104.10350
+* Xu et al. (2023) - "Making AI Less 'Thirsty'" - https://arxiv.org/abs/2304.03271
+
+**Limitations**:
+* Regional variability in WUE based on data center location and cooling methods
+* Excludes embodied water used in chip manufacturing
+* Based on annualized averages rather than task-specific measurements
 
 ### Phones charged
 

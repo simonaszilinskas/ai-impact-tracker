@@ -594,8 +594,9 @@ function updateUsageNotification() {
     // Add a timestamp for debugging
     const updateTime = new Date().toLocaleTimeString();
     
-    // One-line message with emoji separator
-    let message = `AI models have an environmental impact <span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
+    // One-line message with emoji separator, including water usage
+    const waterUsage = (todayEnergyUsage / 1000 * 0.2).toFixed(6);
+    let message = `AI models have an environmental impact <span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh</span> <span class="ai-impact-emoji">💧</span> <span class="ai-impact-energy">${waterUsage} L water today</span>`;
     
     // Log for debugging how frequently updates occur
     console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);
