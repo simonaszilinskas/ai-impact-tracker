@@ -179,7 +179,12 @@ function updateTodayStats(logs) {
     const todayWaterElement = document.getElementById('today-toasts');
     if (todayWaterElement) {
       console.log('Updating today water consumption element:', todayWaterElement, 'with value:', equivalents.water);
-      todayWaterElement.textContent = formatNumber(equivalents.water.toFixed(6));
+      // Format water in ml if small, otherwise in L
+      if (equivalents.water < 0.01) {
+        todayWaterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(2))} ml`;
+      } else {
+        todayWaterElement.textContent = `${formatNumber(equivalents.water.toFixed(4))} L`;
+      }
     } else {
       console.error('Today water consumption element not found! Check the ID in HTML.');
     }
@@ -233,7 +238,12 @@ function updateLifetimeStats(logs) {
     const waterElement = document.getElementById('lifetime-toasts');
     if (waterElement) {
       console.log('Updating water consumption element:', waterElement, 'with value:', equivalents.water);
-      waterElement.textContent = formatNumber(equivalents.water.toFixed(6));
+      // Format water in ml if small, otherwise in L
+      if (equivalents.water < 0.01) {
+        waterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(2))} ml`;
+      } else {
+        waterElement.textContent = `${formatNumber(equivalents.water.toFixed(4))} L`;
+      }
     } else {
       console.error('Water consumption element not found! Check the ID in HTML.');
     }
