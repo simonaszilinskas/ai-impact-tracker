@@ -69,22 +69,29 @@ To provide context for the energy consumed by AI interactions, the tool converts
 
 **Note**: Modern smartphones vary in battery capacity, but this provides a reasonable average for comparison purposes.
 
-### High-Speed Rail Traveled
+### Elevator rides
 
-**Energy estimate**: ~20-30 Wh per passenger-kilometer
+**Energy estimate**: ≈ 6.25 Wh per person per floor
 
 **Methodology**:
-* Based on TGV (French high-speed train) 
-* Assumes typical passenger load (70-80% of capacity)
-* Considers regenerative braking and electric propulsion efficiency
+1. **Active energy per 100 runs** (post-modernization, VFAC PM drive): assumed 5 kWh (5,000 Wh)  
+2. **Average load per run**: 2 people  
+3. **Average floors served per run**: 4 floors  
+4. **Total person-floors in 100 runs**:  
+   ```  
+   100 runs × 2 people/run × 4 floors/run = 800 person-floors  
+   ```  
+5. **Energy per person-floor**:  
+   ```  
+   5,000 Wh ÷ 800 person-floors = 6.25 Wh/person-floor  
+   ```
 
-## Limitations and caveats
-* The calculations represent estimates based on research found and may not reflect actual measurements from OpenAI's infrastructure
-* Energy consumption varies based on model version and specific implementation details not publicly available
-* Network transmission energy may vary significantly based on user location and infrastructure
+**Source data**:  
+Derived from “active energy per 100 runs” benchmarks for VFAC PM-driven elevators (April 2017 Elevator World article - https://elevatorworld.com/article/lift-energy-consumption-comparative-reporting/)
 
 # Conclusion
 
 The AI Impact Tracker provides estimates of LLM energy consumption and tries to contextualise them through familiar equivalents. Exact energy measurements would require direct data from model providers.
 
 Contributions to improve these calculations are welcome. If you have suggestions, corrections, or additional data sources that could enhance the accuracy of the estimates, please open an issue or submit a pull request.
+

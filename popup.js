@@ -220,18 +220,20 @@ function updateTodayStats(logs) {
     const todayWaterElement = document.getElementById('today-toasts');
     if (todayWaterElement) {
       console.log('Updating today water consumption element:', todayWaterElement, 'with value:', equivalents.water);
-      // Format water in ml if small, otherwise in L
+      // Format water in ml if small, otherwise in L with simpler format
       if (equivalents.water < 0.01) {
-        todayWaterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(2))} ml`;
+        todayWaterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(0))} ml`;
+      } else if (equivalents.water < 1) {
+        todayWaterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(0))} ml`;
       } else {
-        todayWaterElement.textContent = `${formatNumber(equivalents.water.toFixed(4))} L`;
+        todayWaterElement.textContent = `${formatNumber(equivalents.water.toFixed(1))} L`;
       }
     } else {
       console.error('Today water consumption element not found! Check the ID in HTML.');
     }
     
     document.getElementById('today-phones').textContent = formatNumber(equivalents.phones);
-    document.getElementById('today-train').textContent = `${formatNumber(equivalents.train)} km`;
+    document.getElementById('today-train').textContent = `${formatNumber(equivalents.elevator)} floors`;
   } catch (error) {
     console.error('Error updating today environmental equivalents:', error);
   }
@@ -279,18 +281,20 @@ function updateLifetimeStats(logs) {
     const waterElement = document.getElementById('lifetime-toasts');
     if (waterElement) {
       console.log('Updating water consumption element:', waterElement, 'with value:', equivalents.water);
-      // Format water in ml if small, otherwise in L
+      // Format water in ml if small, otherwise in L with simpler format
       if (equivalents.water < 0.01) {
-        waterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(2))} ml`;
+        waterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(0))} ml`;
+      } else if (equivalents.water < 1) {
+        waterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(0))} ml`;
       } else {
-        waterElement.textContent = `${formatNumber(equivalents.water.toFixed(4))} L`;
+        waterElement.textContent = `${formatNumber(equivalents.water.toFixed(1))} L`;
       }
     } else {
       console.error('Water consumption element not found! Check the ID in HTML.');
     }
     
     document.getElementById('lifetime-phones').textContent = formatNumber(equivalents.phones);
-    document.getElementById('lifetime-train').textContent = `${formatNumber(equivalents.train)} km`;
+    document.getElementById('lifetime-train').textContent = `${formatNumber(equivalents.elevator)} floors`;
     
     // Force a repaint to ensure updates are visible
     document.body.style.display = 'none';
@@ -324,7 +328,7 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
       movies: 0,
       water: 0,
       phones: 0,
-      train: 0
+      elevator: 0
     };
   }
   
@@ -341,22 +345,23 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
   // Phone charges (10-15 Wh per full charge)
   const phoneCharges = Math.max(0, Math.round(validEnergyUsage / 13.5 * 10) / 10);
   
-  // High-speed train travel (20-30 Wh per passenger-kilometer)
-  const trainTravel = Math.max(0, Math.round(validEnergyUsage / 25 * 10) / 10);
+  // Elevator rides (6.25 Wh per person per floor - assuming 2 people per elevator)
+  const elevatorFloors = Math.max(0, Math.round(validEnergyUsage / 6.25));
   
   console.log(`Calculating equivalents for ${validEnergyUsage}Wh (${energyUsageKwh}kWh):`, {
     movies: movieMinutes,
     water: waterConsumptionLiters,
     phones: phoneCharges,
-    train: trainTravel
+    elevator: elevatorFloors
   });
   
+  // Convert to numbers and apply sensible defaults to prevent NaN
   return {
     electricity: energyUsageKwh.toFixed(3),
-    movies: movieMinutes,
-    water: waterConsumptionLiters,
-    phones: phoneCharges,
-    train: trainTravel
+    movies: movieMinutes || 0,
+    water: waterConsumptionLiters || 0,
+    phones: phoneCharges || 0,
+    elevator: elevatorFloors || 0
   };
 }
 

@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "AI Impact Tracker",
-    "version": "1.3",
-    "description": "Estimate the energy footprint of your AI usage",
+    "version": "1.4",
+    "description": "Estimate the energy and water footprint of your AI usage",
     "permissions": ["storage"],
     "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
     "background": {
