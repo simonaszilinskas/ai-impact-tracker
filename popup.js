@@ -214,7 +214,23 @@ function updateTodayStats(logs) {
   // Update the DOM with the calculated values, ensure we have proper formatting
   try {
     // Update each element individually with error handling
-    document.getElementById('today-movies').textContent = `${equivalents.movies} mins`;
+    // Format YouTube streaming time - show in hours if over 60 minutes
+    const todayMovieMinutes = equivalents.movies;
+    let todayFormattedMovieTime;
+    
+    if (todayMovieMinutes >= 60) {
+      const todayMovieHours = todayMovieMinutes / 60;
+      // One decimal place for 1-10 hours, no decimals above 10 hours
+      if (todayMovieHours < 10) {
+        todayFormattedMovieTime = `${formatNumber(todayMovieHours.toFixed(1))} hours`;
+      } else {
+        todayFormattedMovieTime = `${formatNumber(Math.round(todayMovieHours))} hours`;
+      }
+    } else {
+      todayFormattedMovieTime = `${formatNumber(todayMovieMinutes)} mins`;
+    }
+    
+    document.getElementById('today-movies').textContent = todayFormattedMovieTime;
     
     // Special handling for water consumption with explicit debugging
     const todayWaterElement = document.getElementById('today-toasts');
@@ -233,7 +249,7 @@ function updateTodayStats(logs) {
     }
     
     document.getElementById('today-phones').textContent = formatNumber(equivalents.phones);
-    document.getElementById('today-train').textContent = `${formatNumber(equivalents.elevator)} floors`;
+    document.getElementById('today-elevator').textContent = `${formatNumber(equivalents.elevator)} floors`;
   } catch (error) {
     console.error('Error updating today environmental equivalents:', error);
   }
@@ -275,7 +291,23 @@ function updateLifetimeStats(logs) {
   // Update the DOM with the calculated values, ensure we have proper formatting
   try {
     // Update each element individually with error handling
-    document.getElementById('lifetime-movies').textContent = `${equivalents.movies} mins`;
+    // Format YouTube streaming time - show in hours if over 60 minutes
+    const lifetimeMovieMinutes = equivalents.movies;
+    let lifetimeFormattedMovieTime;
+    
+    if (lifetimeMovieMinutes >= 60) {
+      const lifetimeMovieHours = lifetimeMovieMinutes / 60;
+      // One decimal place for 1-10 hours, no decimals above 10 hours
+      if (lifetimeMovieHours < 10) {
+        lifetimeFormattedMovieTime = `${formatNumber(lifetimeMovieHours.toFixed(1))} hours`;
+      } else {
+        lifetimeFormattedMovieTime = `${formatNumber(Math.round(lifetimeMovieHours))} hours`;
+      }
+    } else {
+      lifetimeFormattedMovieTime = `${formatNumber(lifetimeMovieMinutes)} mins`;
+    }
+    
+    document.getElementById('lifetime-movies').textContent = lifetimeFormattedMovieTime;
     
     // Special handling for water consumption with explicit debugging
     const waterElement = document.getElementById('lifetime-toasts');
@@ -294,7 +326,7 @@ function updateLifetimeStats(logs) {
     }
     
     document.getElementById('lifetime-phones').textContent = formatNumber(equivalents.phones);
-    document.getElementById('lifetime-train').textContent = `${formatNumber(equivalents.elevator)} floors`;
+    document.getElementById('lifetime-elevator').textContent = `${formatNumber(equivalents.elevator)} floors`;
     
     // Force a repaint to ensure updates are visible
     document.body.style.display = 'none';
