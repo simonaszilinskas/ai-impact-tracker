@@ -6,7 +6,7 @@ This page tries to outline the methodology used by the AI Impact Tracker extensi
 
 ### Core methodology
 
- AI Impact Tracker is inspired by the [EcoLogits](https://ecologits.ai/latest/) methodology developed by GenAI Impact, a non-profit focused on measuring the environmental impact of generative AI systems. The calculations focus on inference-time energy consumption, which represents the energy used when interacting with an LLM.
+he calculations focus on inference-time energy consumption, which represents the energy used when interacting with an LLM.
 
 Key components of the calculation :
 * **Token-based estimation**: Energy consumption is calculated per output token, using character count as a proxy (roughly 4 characters = 1 token for English text)

@@ -18,7 +18,7 @@ A browser extension (for now only Chrome) that estimates the environmental impac
 </div>
 
 ## How it works
-This extension tracks messages the user sends to ChatGPT, tries to catch the number of output tokens by the models based on the character size of it's response, then, using a methodology inspired by [Ecologits](https://ecologits.ai/), it calculates the energy footprint. More on the methdology: https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md
+This extension tracks messages the user sends to ChatGPT, tries to catch the number of output tokens by the models based on the character size of it's response, then it calculates the energy footprint. More on the methdology: https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md
 
 ## Current status
 - Works exclusively with ChatGPT for now, with plans to support more AI platforms
