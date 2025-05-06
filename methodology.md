@@ -6,12 +6,27 @@ This page tries to outline the methodology used by the AI Impact Tracker extensi
 
 ### Core methodology
 
-he calculations focus on inference-time energy consumption, which represents the energy used when interacting with an LLM.
+The calculations focus on inference-time energy consumption, which represents the energy used when interacting with an LLM.
 
-Key components of the calculation :
+Key components of the calculation:
 * **Token-based estimation**: Energy consumption is calculated per output token, using character count as a proxy (roughly 4 characters = 1 token for English text)
 * **Model architecture consideration**: Special handling for Mixture of Experts (MoE) models, which only activate a subset of parameters during inference
 * **Data center overhead**: Inclusion of Power Usage Effectiveness (PUE) to account for cooling and infrastructure costs
+
+### Energy consumption formula
+
+The energy consumption per token is calculated using the following formula:
+
+```
+energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA
+```
+
+Where:
+* **ENERGY_ALPHA** = 8.91e-5 Wh/token/B-params (Energy coefficient for model parameters)
+* **ENERGY_BETA** = 1.43e-3 Wh/token (Base energy per token)
+* **activeParamsBillions** = Number of active parameters in billions
+
+This formula is derived from academic research on LLM energy consumption, scaling with both the number of active parameters and the total tokens processed.
 
 ### Assumptions for ChatGPT (GPT 4o)
 
@@ -32,6 +47,7 @@ To provide context for the energy consumed by AI interactions, the tool converts
 **Methodology**:
 * Focused on network and data center energy (excluding device energy)
 * Assumes standard video quality (480p)
+* Formula: `movieMinutes = energyUsageWh / 0.25`
 * Primary energy consumers:
   * Content delivery networks (CDNs)
   * Data centers
@@ -45,7 +61,7 @@ To provide context for the energy consumed by AI interactions, the tool converts
 
 **Methodology**:
 * Based on Water Usage Effectiveness (WUE) metrics from cloud data centers
-* Formula: Water_Consumption_Liters = (Energy_Wh / 1000) * WUE_L_per_kWh
+* Formula: `waterConsumptionLiters = (energyUsageWh / 1000) * 0.2`
 * Uses Microsoft Azure's reported average WUE of 0.2 L/kWh
 
 **Sources**:
@@ -60,12 +76,13 @@ To provide context for the energy consumed by AI interactions, the tool converts
 
 ### Phones charged
 
-**Energy estimate**: ~10-15 Wh per full charge
+**Energy estimate**: ~13.5 Wh per full charge
 
 **Methodology**:
 * Based on typical smartphone battery capacity: 3000-4000 mAh
 * Standard battery voltage: 3.7V
-* Calculation: 3500mAh × 3.7V = ~13 Wh (plus ~15% charging inefficiency)
+* Calculation: 3500mAh × 3.7V = ~13 Wh (plus charging inefficiency)
+* Formula: `phoneCharges = energyUsageWh / 13.5`
 
 **Note**: Modern smartphones vary in battery capacity, but this provides a reasonable average for comparison purposes.
 
@@ -77,14 +94,9 @@ To provide context for the energy consumed by AI interactions, the tool converts
 1. **Active energy per 100 runs** (post-modernization, VFAC PM drive): assumed 5 kWh (5,000 Wh)  
 2. **Average load per run**: 2 people  
 3. **Average floors served per run**: 4 floors  
-4. **Total person-floors in 100 runs**:  
-   ```  
-   100 runs × 2 people/run × 4 floors/run = 800 person-floors  
-   ```  
-5. **Energy per person-floor**:  
-   ```  
-   5,000 Wh ÷ 800 person-floors = 6.25 Wh/person-floor  
-   ```
+4. **Total person-floors in 100 runs**: 100 runs × 2 people/run × 4 floors/run = 800 person-floors  
+5. **Energy per person-floor**: 5,000 Wh ÷ 800 person-floors = 6.25 Wh/person-floor
+6. **Formula**: `elevatorFloors = energyUsageWh / 6.25`
 
 **Source data**:  
 Derived from “active energy per 100 runs” benchmarks for VFAC PM-driven elevators (April 2017 Elevator World article - https://elevatorworld.com/article/lift-energy-consumption-comparative-reporting/)
