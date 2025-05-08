@@ -400,6 +400,7 @@ function createUsageNotification() {
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
+      touch-action: none; /* Prevent scrolling when dragging on mobile */
       background-color: white;
       color: #333;
       padding: 6px 16px;
@@ -412,12 +413,13 @@ function createUsageNotification() {
       justify-content: center;
       z-index: 10000;
       transition: all 0.3s ease;
-      cursor: pointer;
+      cursor: move;
       line-height: 1.2;
       max-width: 550px;
       min-width: 300px;
       text-align: center;
       height: 22px; /* Fixed small height */
+      user-select: none; /* Prevent text selection when dragging */
     }
     
     .ai-impact-notification:hover {
@@ -489,8 +491,101 @@ function createUsageNotification() {
     </div>
   `;
   
-  // Add event listener to open extension popup
-  notification.addEventListener('click', () => {
+  // Make the notification draggable
+  let isDragging = false;
+  let offsetX, offsetY;
+  
+  // Mouse events for dragging
+  notification.addEventListener('mousedown', startDrag);
+  document.addEventListener('mousemove', moveDrag);
+  document.addEventListener('mouseup', endDrag);
+  
+  // Touch events for mobile dragging
+  notification.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    e.clientX = touch.clientX;
+    e.clientY = touch.clientY;
+    startDrag(e);
+  });
+  
+  document.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    e.clientX = touch.clientX;
+    e.clientY = touch.clientY;
+    moveDrag(e);
+  });
+  
+  document.addEventListener('touchend', endDrag);
+  
+  // Start dragging
+  function startDrag(e) {
+    isDragging = true;
+    
+    // Calculate the offset of the cursor/touch from the notification's top-left corner
+    const rect = notification.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    
+    // Change cursor to grabbing during drag
+    notification.style.cursor = 'grabbing';
+    
+    // Prevent default behaviors
+    e.preventDefault();
+  }
+  
+  // Handle drag movement
+  function moveDrag(e) {
+    if (!isDragging) return;
+    
+    // Calculate new position
+    const x = e.clientX - offsetX;
+    const y = e.clientY - offsetY;
+    
+    // Keep notification within viewport bounds
+    const notifWidth = notification.offsetWidth;
+    const notifHeight = notification.offsetHeight;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    // Constrain horizontal position
+    const boundedX = Math.max(0, Math.min(x, windowWidth - notifWidth));
+    
+    // Constrain vertical position
+    const boundedY = Math.max(0, Math.min(y, windowHeight - notifHeight));
+    
+    // Update position styles - remove the transform property
+    notification.style.left = boundedX + 'px';
+    notification.style.top = boundedY + 'px';
+    notification.style.transform = 'none';
+    
+    // Prevent default to avoid page scrolling during drag
+    e.preventDefault();
+  }
+  
+  // End dragging
+  function endDrag() {
+    if (isDragging) {
+      isDragging = false;
+      // Change cursor back to move
+      notification.style.cursor = 'move';
+      
+      // Save position to localStorage for persistence
+      try {
+        const rect = notification.getBoundingClientRect();
+        const position = {
+          x: rect.left,
+          y: rect.top
+        };
+        localStorage.setItem('aiImpactNotificationPosition', JSON.stringify(position));
+      } catch (e) {
+        console.error("Error saving notification position:", e);
+      }
+    }
+  }
+  
+  // Add event listener to open extension popup (now on double click to avoid conflicts with dragging)
+  notification.addEventListener('dblclick', () => {
     // Try to open the extension popup programmatically
     try {
       chrome.runtime.sendMessage({ action: "openPopup" });
@@ -530,6 +625,20 @@ function createUsageNotification() {
     }
   } catch (e) {
     console.error("Error inserting notification:", e);
+  }
+  
+  // Remember position if dragged, using localStorage to persist across page refreshes
+  try {
+    // Check if we have saved position in localStorage
+    const savedPosition = localStorage.getItem('aiImpactNotificationPosition');
+    if (savedPosition) {
+      const position = JSON.parse(savedPosition);
+      notification.style.left = position.x + 'px';
+      notification.style.top = position.y + 'px';
+      notification.style.transform = 'none'; // Remove the default centering
+    }
+  } catch (e) {
+    console.error("Error restoring notification position:", e);
   }
   
   console.log("AI Impact notification added to page");
@@ -594,8 +703,8 @@ function updateUsageNotification() {
     // Add a timestamp for debugging
     const updateTime = new Date().toLocaleTimeString();
     
-    // One-line message with emoji separator
-    let message = `AI models have an environmental impact <span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
+    // One-line message with emoji separator and drag hint
+    let message = `AI models have an environmental impact <span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span> <span style="font-size:10px;margin-left:4px;opacity:0.7;">(drag to move)</span>`;
     
     // Log for debugging how frequently updates occur
     console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);

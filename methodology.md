@@ -2,6 +2,13 @@
 
 This page tries to outline the methodology used by the AI Impact Tracker extension to calculate energy consumption of LLM interactions, along with real-world equivalents for better context.
 
+## Features
+
+- **Real-time Tracking**: Monitors your conversations with ChatGPT and calculates energy consumption based on token usage.
+- **Daily & Total Usage**: Tracks both your daily usage and your cumulative impact over time.
+- **Movable Interface**: The overlay notification can be dragged and positioned anywhere on the screen for convenience.
+- **Persistence**: Your preferred overlay position is remembered between sessions.
+
 ## How energy consumption of LLMs is calculated
 
 ### Core methodology
