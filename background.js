@@ -18,27 +18,45 @@ chrome.runtime.onInstalled.addListener((details) => {
   } else if (details.reason === 'update') {
     // Handle upgrade - preserve existing data
     console.log("Extension update detected - preserving data");
-    chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], (result) => {
-      // Store the new version
-      const oldVersion = result.extensionVersion || '0.0';
-      const newVersion = chrome.runtime.getManifest().version;
-      
-      console.log(`Updating from version ${oldVersion} to ${newVersion}`);
-      
-      // Make sure chatgptLogs exists and is valid
-      if (!result.chatgptLogs || !Array.isArray(result.chatgptLogs)) {
-        console.warn("Invalid logs format detected during update, repairing...");
-        chrome.storage.local.set({ 
-          chatgptLogs: [], 
-          extensionVersion: newVersion 
+    
+    try {
+      chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], (result) => {
+        // Check for runtime errors
+        if (chrome.runtime.lastError) {
+          console.error("Error accessing storage during update:", chrome.runtime.lastError);
+          return;
+        }
+
+        // Store the new version
+        const oldVersion = result.extensionVersion || '0.0';
+        const newVersion = chrome.runtime.getManifest().version;
+        
+        console.log(`Updating from version ${oldVersion} to ${newVersion}`);
+        
+        // Extra log to debug upgrade path
+        console.log("Existing data:", {
+          hasLogs: !!result.chatgptLogs,
+          logsIsArray: Array.isArray(result.chatgptLogs),
+          logsCount: Array.isArray(result.chatgptLogs) ? result.chatgptLogs.length : 0
         });
-      } else {
-        // Just update the version while preserving logs
-        chrome.storage.local.set({ 
-          extensionVersion: newVersion 
-        });
-      }
-    });
+        
+        // Make sure chatgptLogs exists and is valid
+        if (!result.chatgptLogs || !Array.isArray(result.chatgptLogs)) {
+          console.warn("Invalid logs format detected during update, repairing...");
+          chrome.storage.local.set({ 
+            chatgptLogs: [], 
+            extensionVersion: newVersion 
+          });
+        } else {
+          // Just update the version while preserving logs
+          chrome.storage.local.set({ 
+            extensionVersion: newVersion 
+          });
+        }
+      });
+    } catch (err) {
+      console.error("Critical error during update:", err);
+    }
   }
 });
 
