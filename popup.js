@@ -5,12 +5,25 @@
  * displaying usage logs and environmental metrics.
  */
 
+/**
+ * Safely access chrome.storage API
+ * Returns null if not available
+ */
+const getChromeStorage = () => {
+  try {
+    // Check if we're in a proper extension context
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      return chrome.storage.local;
+    }
+  } catch (e) {
+    console.error("Error accessing chrome storage API:", e);
+  }
+  return null;
+};
+
 document.addEventListener('DOMContentLoaded', function() {
   try {
-    // Load and display the logs when the popup opens
-    loadLogs();
-    
-    // Set up tab switching
+    // Set up tab switching (this will work regardless of storage)
     document.getElementById('lifetime-tab').addEventListener('click', function() {
       switchTab('lifetime');
     });
@@ -21,11 +34,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add resize observer to adjust popup size based on content
     adjustPopupHeight();
-  } catch(err) {
-    console.error("Error initializing popup:", err);
-    // Show zero values as fallback
+    
+    // Initialize with empty data
     updateTodayStats([]);
     updateLifetimeStats([]);
+    
+    // Try to load logs, but don't fail if storage is unavailable
+    loadLogs();
+  } catch(err) {
+    console.error("Error initializing popup:", err);
   }
 });
 
@@ -106,17 +123,18 @@ function switchTab(tabId) {
  */
 function loadLogs() {
   try {
-    // Check if Chrome API is available
-    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
-      console.error('Chrome storage API not available');
-      updateTodayStats([]);
-      updateLifetimeStats([]);
-      return;
+    // Get storage safely
+    const storage = getChromeStorage();
+    if (!storage) {
+      console.warn('Chrome storage API not available - showing empty stats');
+      return; // We already initialized with empty stats
     }
     
-    chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], function(result) {
-      if (chrome.runtime.lastError) {
-        console.error('Error loading logs:', chrome.runtime.lastError);
+    storage.get(['chatgptLogs', 'extensionVersion'], function(result) {
+      // Check for chrome.runtime.lastError safely
+      const lastError = chrome.runtime && chrome.runtime.lastError;
+      if (lastError) {
+        console.error('Error loading logs:', lastError);
         // Retry once after a short delay
         setTimeout(() => {
           console.log('Retrying log load after error...');
@@ -173,15 +191,20 @@ function loadLogs() {
 
 function tryLoadLogsAgain() {
   try {
-    // Check if Chrome API is available
-    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
-      console.error('Chrome storage API not available in retry');
-      updateTodayStats([]);
-      updateLifetimeStats([]);
-      return;
+    // Get storage safely
+    const storage = getChromeStorage();
+    if (!storage) {
+      console.warn('Chrome storage API not available in retry attempt');
+      return; // We already initialized with empty stats
     }
     
-    chrome.storage.local.get('chatgptLogs', function(result) {
+    storage.get('chatgptLogs', function(result) {
+      // Safely handle result
+      if (!result) {
+        console.warn('No result from storage in retry');
+        return;
+      }
+      
       const logs = Array.isArray(result.chatgptLogs) ? result.chatgptLogs : [];
       console.log(`Retry loaded ${logs.length} logs from storage`);
       
@@ -190,9 +213,7 @@ function tryLoadLogsAgain() {
     });
   } catch (e) {
     console.error('Error in retry loadLogs:', e);
-    // Use empty arrays as fallback
-    updateTodayStats([]);
-    updateLifetimeStats([]);
+    // Already initialized with empty stats
   }
 }
 
