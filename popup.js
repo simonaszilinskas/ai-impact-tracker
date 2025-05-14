@@ -6,8 +6,16 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Load and display the logs when the popup opens
-  loadLogs();
+  // Check if Chrome API is available (for testing in browser outside extension)
+  if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+    console.warn("Chrome storage API not available - running in test/development mode");
+    // Create mock data for testing
+    updateTodayStats([{energyUsage: 0.5}, {energyUsage: 0.7}]);
+    updateLifetimeStats([{energyUsage: 4.2}, {energyUsage: 3.8}, {energyUsage: 2.1}]);
+  } else {
+    // Load and display the logs when the popup opens
+    loadLogs();
+  }
   
   // Set up tab switching
   document.getElementById('lifetime-tab').addEventListener('click', function() {
@@ -17,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('today-tab').addEventListener('click', function() {
     switchTab('today');
   });
-  
   
   // Add resize observer to adjust popup size based on content
   adjustPopupHeight();
