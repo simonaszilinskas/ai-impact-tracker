@@ -403,22 +403,23 @@ function createUsageNotification() {
       touch-action: none; /* Prevent scrolling when dragging on mobile */
       background-color: white;
       color: #333;
-      padding: 6px 16px;
+      padding: 4px 12px;
       border-radius: 6px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       font-size: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       z-index: 10000;
       transition: all 0.3s ease;
       cursor: move;
       line-height: 1.2;
-      max-width: 550px;
-      min-width: 300px;
       text-align: center;
-      height: 22px; /* Fixed small height */
+      width: auto;
+      min-width: auto;
+      max-width: auto;
+      height: auto;
       user-select: none; /* Prevent text selection when dragging */
     }
     
@@ -429,8 +430,7 @@ function createUsageNotification() {
     .ai-impact-content {
       text-align: center;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      overflow: visible;
     }
     
     .ai-impact-message {
@@ -447,7 +447,7 @@ function createUsageNotification() {
     }
     
     .ai-impact-emoji {
-      margin: 0 8px;
+      margin: 0 4px 0 0;
       color: #3E7B67;
     }
     
@@ -461,22 +461,15 @@ function createUsageNotification() {
     /* Responsive adjustments */
     @media (max-width: 768px) {
       .ai-impact-notification {
-        max-width: 90%;
-        min-width: 200px;
         font-size: 11px;
+        padding: 3px 10px;
       }
     }
     
     @media (max-width: 480px) {
       .ai-impact-notification {
-        max-width: 95%;
-        min-width: 180px;
         font-size: 10px;
-        padding: 5px 12px;
-      }
-      
-      .ai-impact-emoji {
-        margin: 0 4px;
+        padding: 3px 8px;
       }
     }
   `;
@@ -703,8 +696,8 @@ function updateUsageNotification() {
     // Add a timestamp for debugging
     const updateTime = new Date().toLocaleTimeString();
     
-    // One-line message with emoji separator and drag hint
-    let message = `AI models have an environmental impact <span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span> <span style="font-size:10px;margin-left:4px;opacity:0.7;">(drag to move)</span>`;
+    // One-line message with energy usage information
+    let message = `<span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
     
     // Log for debugging how frequently updates occur
     console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);
