@@ -32,12 +32,18 @@ document.addEventListener('DOMContentLoaded', function() {
       switchTab('today');
     });
     
+    // Set up email form event listeners
+    setupEmailForm();
+    
     // Add resize observer to adjust popup size based on content
     adjustPopupHeight();
     
     // Initialize with empty data
     updateTodayStats([]);
     updateLifetimeStats([]);
+    
+    // Check if user has email and show/hide overlay accordingly
+    checkUserEmailAndUpdateUI();
     
     // Try to load logs, but don't fail if storage is unavailable
     loadLogs();
@@ -458,4 +464,154 @@ function formatNumber(num, isEnergy = false) {
   
   // Otherwise use comma format
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+/**
+ * Sets up email form event listeners
+ */
+function setupEmailForm() {
+  const emailInput = document.getElementById('email-input');
+  const submitBtn = document.getElementById('email-submit');
+  
+  // Submit email
+  submitBtn.addEventListener('click', function() {
+    const email = emailInput.value.trim();
+    const marketingConsent = document.getElementById('marketing-consent').checked;
+    
+    if (email && isValidEmail(email)) {
+      saveUserEmail(email, marketingConsent);
+      hideEmailOverlay();
+    } else {
+      emailInput.style.borderColor = '#e74c3c';
+      setTimeout(() => {
+        emailInput.style.borderColor = '';
+      }, 3000);
+    }
+  });
+  
+  // Allow enter key to submit
+  emailInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      submitBtn.click();
+    }
+  });
+}
+
+/**
+ * Checks user email and updates UI accordingly
+ */
+function checkUserEmailAndUpdateUI() {
+  getUserEmail().then(email => {
+    if (email) {
+      hideEmailOverlay();
+    } else {
+      showEmailOverlay();
+    }
+  });
+}
+
+/**
+ * Shows the email collection overlay
+ */
+function showEmailOverlay() {
+  const overlay = document.getElementById('email-overlay');
+  const lifetimeContainer = document.getElementById('lifetime-stats');
+  const disclaimer = document.querySelector('.estimation-disclaimer');
+  
+  overlay.classList.remove('hidden');
+  lifetimeContainer.classList.add('lifetime-blurred');
+  if (disclaimer) disclaimer.style.display = 'none';
+}
+
+/**
+ * Hides the email collection overlay
+ */
+function hideEmailOverlay() {
+  const overlay = document.getElementById('email-overlay');
+  const lifetimeContainer = document.getElementById('lifetime-stats');
+  const disclaimer = document.querySelector('.estimation-disclaimer');
+  
+  overlay.classList.add('hidden');
+  lifetimeContainer.classList.remove('lifetime-blurred');
+  if (disclaimer) disclaimer.style.display = 'block';
+  document.getElementById('email-input').value = '';
+}
+
+/**
+ * Validates email format
+ */
+function isValidEmail(email) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Saves user email to storage
+ */
+function saveUserEmail(email, marketingConsent = false) {
+  const storage = getChromeStorage();
+  if (storage) {
+    storage.set({ 
+      userEmail: email,
+      emailConsent: true,
+      emailConsentDate: new Date().toISOString(),
+      marketingConsent: marketingConsent,
+      marketingConsentDate: marketingConsent ? new Date().toISOString() : null
+    }, function() {
+      console.log('User email saved with consent:', { email, marketingConsent });
+      sendEmailToBackend(email, marketingConsent);
+    });
+  }
+}
+
+/**
+ * Gets user email from storage
+ */
+function getUserEmail() {
+  return new Promise((resolve) => {
+    const storage = getChromeStorage();
+    if (storage) {
+      storage.get(['userEmail'], function(result) {
+        resolve(result.userEmail || null);
+      });
+    } else {
+      resolve(null);
+    }
+  });
+}
+
+/**
+ * Sends email to backend for collection
+ */
+function sendEmailToBackend(email, marketingConsent = false) {
+  // Supabase configuration (public anon key - safe to expose in browser extensions)
+  const SUPABASE_URL = 'https://hhjwbkrobrljpuurvycq.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhoandia3JvYnJsanB1dXJ2eWNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc5MjA1MTMsImV4cCI6MjA2MzQ5NjUxM30.aSU8ERRvV9RJdBYcReop42Ue3ZMH1U6S2JsNU-wpc5Y';
+  
+  fetch(`${SUPABASE_URL}/rest/v1/user_emails`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+    },
+    body: JSON.stringify({ 
+      email: email,
+      extension_version: chrome.runtime?.getManifest()?.version || 'unknown',
+      consent_given: true,
+      consent_date: new Date().toISOString(),
+      marketing_consent: marketingConsent,
+      marketing_consent_date: marketingConsent ? new Date().toISOString() : null
+    })
+  }).then(response => {
+    if (response.ok) {
+      console.log('Email sent to backend successfully');
+    } else if (response.status === 409) {
+      console.log('Email already exists in database (this is normal)');
+    } else {
+      console.error('Failed to send email to backend:', response.status);
+    }
+  }).catch(error => {
+    console.error('Error sending email to backend:', error);
+  });
 }

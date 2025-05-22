@@ -311,6 +311,160 @@
       text-decoration: underline;
     }
     
+    /* Email Collection Overlay */
+    .email-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(247, 247, 248, 0.95);
+      backdrop-filter: blur(4px);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px;
+      z-index: 10;
+    }
+    
+    .email-overlay.hidden {
+      display: none;
+    }
+    
+    .email-overlay h3 {
+      margin: 0 0 8px 0;
+      color: var(--primary-color);
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .email-overlay p {
+      margin: 0 0 16px 0;
+      color: var(--muted-text);
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 280px;
+    }
+    
+    .email-form {
+      width: 100%;
+      max-width: 280px;
+    }
+    
+    .email-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+      font-family: inherit;
+      transition: border-color 0.2s ease;
+    }
+    
+    .email-input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    
+    .email-buttons {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+      width: 100%;
+    }
+    
+    .email-btn {
+      width: 100%;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    
+    .email-btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .email-btn-primary:hover {
+      background-color: var(--primary-color-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(62, 123, 103, 0.3);
+    }
+    
+    .email-btn-secondary {
+      background-color: transparent;
+      color: var(--muted-text);
+      border: 1px solid var(--border-color);
+    }
+    
+    .email-btn-secondary:hover {
+      background-color: var(--background-color);
+    }
+    
+    .gdpr-notice {
+      font-size: 10px;
+      color: var(--muted-text);
+      line-height: 1.3;
+      margin-top: 0;
+      max-width: 280px;
+    }
+    
+    .gdpr-notice a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    .gdpr-notice a:hover {
+      text-decoration: underline;
+    }
+    
+    .lifetime-blurred {
+      position: relative;
+    }
+    
+    .lifetime-blurred .content-section {
+      filter: blur(3px);
+      pointer-events: none;
+      user-select: none;
+    }
+    
+    /* Checkbox Styling */
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-color);
+      line-height: 1.3;
+      text-align: center;
+      gap: 6px;
+    }
+    
+    .marketing-checkbox {
+      margin-right: 0;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--primary-color);
+    }
+    
+    .checkbox-text {
+      flex: 1;
+      user-select: none;
+    }
+    
   </style>
   <script src="popup.js"></script>
 </head>
@@ -324,12 +478,12 @@
   </div>
   
   <div class="tab-container">
-    <div class="tab active" id="lifetime-tab">Lifetime</div>
-    <div class="tab" id="today-tab">Today</div>
+    <div class="tab active" id="today-tab">Today</div>
+    <div class="tab" id="lifetime-tab">Lifetime</div>
   </div>
   
-  <!-- Lifetime Stats Container -->
-  <div id="lifetime-stats" class="stats-container active">
+  <!-- Today Stats Container -->
+  <div id="today-stats" class="stats-container active">
     <div class="content-section">
       <div class="usage-stats-grid">
         <div class="stat-box">
@@ -390,8 +544,31 @@
     </div>
   </div>
   
-  <!-- Today Stats Container -->
-  <div id="today-stats" class="stats-container">
+  <!-- Lifetime Stats Container -->
+  <div id="lifetime-stats" class="stats-container">
+    <!-- Email Collection Overlay -->
+    <div id="email-overlay" class="email-overlay">
+      <h3>📊 View Lifetime Stats</h3>
+      <p>Provide your email to access lifetime usage data.</p>
+      <div class="email-form">
+        <input type="email" id="email-input" class="email-input" placeholder="your.email@example.com">
+        
+        <label class="checkbox-container">
+          <input type="checkbox" id="marketing-consent" class="marketing-checkbox">
+          <span class="checkmark"></span>
+          <span class="checkbox-text">Send me eco-friendly AI tips</span>
+        </label>
+        
+        <div class="email-buttons">
+          <button id="email-submit" class="email-btn email-btn-primary">View Stats</button>
+        </div>
+        <div class="gdpr-notice">
+          Email required for lifetime stats access. Marketing emails are optional. 
+          <a href="https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/privacy-policy.md" target="_blank">Privacy Policy</a>
+        </div>
+      </div>
+    </div>
+    
     <div class="content-section">
       <div class="usage-stats-grid">
         <div class="stat-box">
@@ -456,6 +633,7 @@
     The numbers are estimations based on realistic assumptions.
     <a href="https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md" target="_blank" style="color: var(--link-color);">View methodology</a>
   </div>
+
   
 </body>
 </html>
