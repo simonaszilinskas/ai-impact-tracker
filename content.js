@@ -9,6 +9,8 @@
 // In-memory storage for conversation logs
 const logs = [];
 let conversationId = null;
+let isExtensionContextValid = true; // Track if extension context is still valid
+let intervalIds = []; // Track all intervals to clear them if context is invalidated
 
 // Constants for EcoLogits methodology
 // These constants are derived from academic research on LLM energy consumption
@@ -24,12 +26,34 @@ const GPU_BITS = 4;            // Quantization level in bits (4-bit = 4x memory 
 const WORLD_EMISSION_FACTOR = 0.418; // Global average emission factor (kgCO2eq/kWh)
 
 /**
+ * Checks if the extension context is still valid
+ * @returns {boolean} True if context is valid, false otherwise
+ */
+function checkExtensionContext() {
+  try {
+    // Try to access a simple Chrome API property
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+      return true;
+    }
+  } catch (e) {
+    console.warn('Extension context check failed:', e.message);
+  }
+  return false;
+}
+
+/**
  * Saves data to Chrome's local storage
  * Handles extension context invalidation gracefully
  * @param {Object} data - Data object to store
  */
 function saveToStorage(data) {
   try {
+    // Check if extension context is still valid
+    if (!isExtensionContextValid || !checkExtensionContext()) {
+      console.warn('Extension context invalidated, skipping storage save');
+      return;
+    }
+    
     // Check if Chrome API is still available
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.set(data, function() {
@@ -38,15 +62,11 @@ function saveToStorage(data) {
           console.error("Chrome storage error:", chrome.runtime.lastError);
           // If context is invalidated, we'll retry once after a delay
           if (chrome.runtime.lastError.message.includes("Extension context invalidated")) {
-            setTimeout(() => {
-              console.log("Attempting to reconnect to extension context...");
-              // This will either work with the refreshed context or fail silently
-              try {
-                chrome.storage.local.set(data);
-              } catch (innerError) {
-                // At this point, we'll just let it go
-              }
-            }, 1000);
+            console.warn('Extension context has been invalidated');
+            isExtensionContextValid = false;
+            // Clear all intervals to prevent further errors
+            intervalIds.forEach(id => clearInterval(id));
+            intervalIds = [];
           }
         }
       });
@@ -139,6 +159,11 @@ function saveLog(userMessage, assistantResponse) {
  * Includes error handling to prevent extension crashes
  */
 function scanMessages() {
+  // Skip if extension context is invalidated
+  if (!isExtensionContextValid) {
+    return false;
+  }
+  
   try {
     // Find all user and assistant messages by their data attributes
     const userMessages = [...document.querySelectorAll('[data-message-author-role="user"]')];
@@ -763,6 +788,7 @@ function initialize() {
       setTimeout(scanMessages, 1000);
     }
   }, 1000);
+  intervalIds.push(urlMonitorInterval);
   
   // Setup periodic notification updates (every 2 minutes)
   // This ensures the notification reflects current usage even if the user
@@ -778,7 +804,9 @@ function initialize() {
 }
 
 // Listen for messages from popup
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+  try {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "updateNotification") {
     if (message.enabled) {
       // Show the notification if it doesn't exist
@@ -795,6 +823,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+  } catch (e) {
+    console.warn('Failed to add message listener:', e);
+  }
+}
 
 /**
  * Calculates energy usage and CO2 emissions based on EcoLogits methodology
@@ -865,8 +897,16 @@ function calculateEnergyAndEmissions(outputTokens) {
  * This helps recover from corrupted/missing data
  */
 function validateAndRepairStorage() {
+  // Check if extension context is still valid
+  if (!isExtensionContextValid || !checkExtensionContext()) {
+    console.log('Extension context invalidated, skipping storage validation');
+    return;
+  }
+  
   console.log("Running storage validation check...");
-  chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], (result) => {
+  
+  try {
+    chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], (result) => {
     if (chrome.runtime.lastError) {
       console.error("Error checking storage:", chrome.runtime.lastError);
       return;
@@ -907,6 +947,15 @@ function validateAndRepairStorage() {
       console.log("Storage validation passed - data is healthy");
     }
   });
+  } catch (e) {
+    console.error('Error accessing Chrome storage:', e);
+    if (e.message && e.message.includes('Extension context invalidated')) {
+      isExtensionContextValid = false;
+      // Clear all intervals
+      intervalIds.forEach(id => clearInterval(id));
+      intervalIds = [];
+    }
+  }
 }
 
 /**
@@ -920,6 +969,18 @@ function initializeWithRetry(retryCount = 3) {
       // Check for runtime error
       if (chrome.runtime.lastError) {
         console.error("Error loading logs:", chrome.runtime.lastError);
+        
+        // Check if it's a context invalidation error
+        if (chrome.runtime.lastError.message && 
+            chrome.runtime.lastError.message.includes('Extension context invalidated')) {
+          console.warn('Extension context invalidated during initialization');
+          isExtensionContextValid = false;
+          // Clear all intervals
+          intervalIds.forEach(id => clearInterval(id));
+          intervalIds = [];
+          return; // Don't retry if context is invalidated
+        }
+        
         if (retryCount > 0) {
           console.log(`Retrying in 1 second (${retryCount} attempts left)...`);
           setTimeout(() => initializeWithRetry(retryCount - 1), 1000);
@@ -953,6 +1014,17 @@ function initializeWithRetry(retryCount = 3) {
     });
   } catch (e) {
     console.error("Critical initialization error:", e);
+    
+    // Check if it's a context invalidation error
+    if (e.message && e.message.includes('Extension context invalidated')) {
+      console.warn('Extension context invalidated during initialization');
+      isExtensionContextValid = false;
+      // Clear all intervals
+      intervalIds.forEach(id => clearInterval(id));
+      intervalIds = [];
+      return; // Don't continue if context is invalidated
+    }
+    
     if (retryCount > 0) {
       console.log(`Retrying in 1 second (${retryCount} attempts left)...`);
       setTimeout(() => initializeWithRetry(retryCount - 1), 1000);
@@ -963,6 +1035,13 @@ function initializeWithRetry(retryCount = 3) {
     }
   }
 }
+
+// Handle page unload to clean up
+window.addEventListener('beforeunload', () => {
+  // Clear all intervals
+  intervalIds.forEach(id => clearInterval(id));
+  intervalIds = [];
+});
 
 // Start the extension
 initialize();
