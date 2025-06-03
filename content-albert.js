@@ -14,10 +14,10 @@ let intervalIds = [];
 let currentModel = 'small'; // Default to small model, will be updated based on UI
 
 // Constants for EcoLogits methodology
-// Albert Small model (based on Llama-like architecture)
+// Albert Small model: Llama 3.1 8B (no MoE)
 const ALBERT_SMALL_PARAMS = 8e9; // 8B parameters
-// Albert Large model (based on larger Llama variant)
-const ALBERT_LARGE_PARAMS = 70e9; // 70B parameters
+// Albert Large model: Mistral Small 3 24B (no MoE)
+const ALBERT_LARGE_PARAMS = 24e9; // 24B parameters
 
 const ENERGY_ALPHA = 8.91e-5;  // Energy coefficient for model parameters (Wh/token/B-params)
 const ENERGY_BETA = 1.43e-3;   // Base energy per token (Wh/token)
@@ -85,28 +85,23 @@ function detectCurrentModel() {
   const modelSelector = document.querySelector('#model-selector-0-button');
   if (modelSelector) {
     const modelText = modelSelector.textContent.toLowerCase();
-    console.log(`Model selector text: "${modelText}"`);
     if (modelText.includes('complexe') || modelText.includes('large')) {
-      console.log('Detected large model from selector');
       return 'large';
     }
   }
   
-  // Check console logs for model information
-  // Look for elements that might contain model info
+  // Check for model information in script content
   const scripts = document.querySelectorAll('script');
   for (const script of scripts) {
     const content = script.textContent;
     if (content.includes('albert-large')) {
-      console.log('Detected large model from script content');
       return 'large';
     }
   }
   
-  // Check for model in aria-labels (from the example you provided)
+  // Check for model in aria-labels
   const modelElements = document.querySelectorAll('[aria-label*="Tâches complexes"], [aria-label*="complexes"]');
   if (modelElements.length > 0) {
-    console.log('Detected large model from aria-label');
     return 'large';
   }
   
@@ -115,12 +110,10 @@ function detectCurrentModel() {
   for (const indicator of modelIndicators) {
     const text = indicator.textContent.toLowerCase();
     if (text.includes('complexe') || text.includes('large')) {
-      console.log('Detected large model from indicator');
       return 'large';
     }
   }
   
-  console.log('Defaulting to small model');
   return 'small'; // Default to small model
 }
 
@@ -611,7 +604,6 @@ function updateUsageNotification() {
     
     let todayLogs = [];
     let todayEnergyUsage = 0;
-    let todayMessages = 0;
     
     try {
       if (Array.isArray(logs)) {
@@ -623,7 +615,6 @@ function updateUsageNotification() {
           }
         });
         
-        todayMessages = todayLogs.length;
         
         todayLogs.forEach(log => {
           try {
@@ -667,8 +658,6 @@ function calculateEnergyAndEmissions(outputTokens, model = 'small') {
   const activeParams = totalParams; // Albert models are not MoE
   const activeParamsBillions = activeParams / 1e9;
   
-  console.log(`Calculating energy for ${outputTokens} tokens, model: ${model}, params: ${activeParamsBillions}B`);
-  
   // Energy consumption per token
   const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
   
@@ -692,16 +681,12 @@ function calculateEnergyAndEmissions(outputTokens, model = 'small') {
   // Apply data center overhead
   const totalEnergy = PUE * serverEnergy;
   
-  console.log(`Energy calculation: energyPerToken=${energyPerToken}, gpuEnergy=${gpuEnergy}, serverEnergy=${serverEnergy}, totalEnergy=${totalEnergy}`);
-  
   // Ensure minimum energy value
   const minEnergy = 0.01;
   const normalizedEnergy = Math.max(totalEnergy, minEnergy);
   
   // Calculate CO2 emissions using French emission factor
   const co2Emissions = normalizedEnergy * FRANCE_EMISSION_FACTOR;
-  
-  console.log(`Final normalized energy: ${normalizedEnergy} Wh`);
   
   return {
     numGPUs,
@@ -911,7 +896,7 @@ function initialize() {
 // Listen for messages from popup
 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
   try {
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener((message) => {
       if (message.action === "updateNotification") {
         if (message.enabled) {
           if (!document.getElementById('ai-impact-notification')) {
