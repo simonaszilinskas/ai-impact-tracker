@@ -599,22 +599,30 @@ function updateUsageNotification() {
       return;
     }
     
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    let todayLogs = [];
-    let todayEnergyUsage = 0;
-    
-    try {
-      if (Array.isArray(logs)) {
-        todayLogs = logs.filter(log => {
+    // Load combined energy usage from both ChatGPT and Albert
+    chrome.storage.local.get(['chatgptLogs', 'albertLogs'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error loading combined logs:", chrome.runtime.lastError);
+        return;
+      }
+      
+      const chatgptLogs = result.chatgptLogs || [];
+      const albertLogs = result.albertLogs || [];
+      const allLogs = [...chatgptLogs, ...albertLogs];
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let todayEnergyUsage = 0;
+      
+      try {
+        const todayLogs = allLogs.filter(log => {
           try {
             return log && log.timestamp && new Date(log.timestamp) >= today;
           } catch (dateError) {
             return false;
           }
         });
-        
         
         todayLogs.forEach(log => {
           try {
@@ -623,24 +631,24 @@ function updateUsageNotification() {
             // Skip this log if energy calculation fails
           }
         });
+      } catch (logsError) {
+        console.error("Error processing logs for notification:", logsError);
       }
-    } catch (logsError) {
-      console.error("Error processing logs for notification:", logsError);
-    }
-    
-    const formattedEnergy = todayEnergyUsage.toFixed(1);
-    const modelName = currentModel === 'large' ? 'Large' : 'Small';
-    
-    let message = `<span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span><span class="ai-impact-model">Albert ${modelName}</span>`;
-    
-    const updateTime = new Date().toLocaleTimeString();
-    console.log(`[${updateTime}] Updating Albert energy notification: ${formattedEnergy} Wh (${modelName} model)`);
-    
-    try {
-      messageElement.innerHTML = message;
-    } catch (updateError) {
-      console.error("Error updating notification message:", updateError);
-    }
+      
+      const formattedEnergy = todayEnergyUsage.toFixed(1);
+      const modelName = currentModel === 'large' ? 'Large' : 'Small';
+      
+      let message = `<span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span><span class="ai-impact-model">Albert ${modelName}</span>`;
+      
+      const updateTime = new Date().toLocaleTimeString();
+      console.log(`[${updateTime}] Updating Albert energy notification: ${formattedEnergy} Wh (${modelName} model)`);
+      
+      try {
+        messageElement.innerHTML = message;
+      } catch (updateError) {
+        console.error("Error updating notification message:", updateError);
+      }
+    });
   } catch (error) {
     console.error("Error in updateUsageNotification:", error);
   }

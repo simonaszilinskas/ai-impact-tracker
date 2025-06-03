@@ -677,31 +677,31 @@ function updateUsageNotification() {
       return;
     }
     
-    // Get today's usage
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Filter logs for today only - with error handling
-    let todayLogs = [];
-    let todayEnergyUsage = 0;
-    let todayMessages = 0;
-    
-    try {
-      // Safely filter logs
-      if (Array.isArray(logs)) {
-        todayLogs = logs.filter(log => {
+    // Load combined energy usage from both ChatGPT and Albert
+    chrome.storage.local.get(['chatgptLogs', 'albertLogs'], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error("Error loading combined logs:", chrome.runtime.lastError);
+        return;
+      }
+      
+      const chatgptLogs = result.chatgptLogs || [];
+      const albertLogs = result.albertLogs || [];
+      const allLogs = [...chatgptLogs, ...albertLogs];
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      let todayEnergyUsage = 0;
+      
+      try {
+        const todayLogs = allLogs.filter(log => {
           try {
-            // Handle potentially invalid log entries
             return log && log.timestamp && new Date(log.timestamp) >= today;
           } catch (dateError) {
-            // Skip this log entry if date parsing fails
             return false;
           }
         });
         
-        todayMessages = todayLogs.length;
-        
-        // Safely calculate energy
         todayLogs.forEach(log => {
           try {
             todayEnergyUsage += log.energyUsage || 0;
@@ -709,30 +709,29 @@ function updateUsageNotification() {
             // Skip this log if energy calculation fails
           }
         });
+      } catch (logsError) {
+        console.error("Error processing logs for notification:", logsError);
       }
-    } catch (logsError) {
-      console.error("Error processing logs for notification:", logsError);
-      // Continue with defaults (zeros) if logs processing fails
-    }
-    
-    // Format energy usage for display (1 decimal place)
-    const formattedEnergy = todayEnergyUsage.toFixed(1);
-    
-    // Add a timestamp for debugging
-    const updateTime = new Date().toLocaleTimeString();
-    
-    // One-line message with energy usage information
-    let message = `<span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
-    
-    // Log for debugging how frequently updates occur
-    console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);
-    
-    // Update the UI with error handling
-    try {
-      messageElement.innerHTML = message;
-    } catch (updateError) {
-      console.error("Error updating notification message:", updateError);
-    }
+      
+      // Format energy usage for display (1 decimal place)
+      const formattedEnergy = todayEnergyUsage.toFixed(1);
+      
+      // Add a timestamp for debugging
+      const updateTime = new Date().toLocaleTimeString();
+      
+      // One-line message with energy usage information
+      let message = `<span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
+      
+      // Log for debugging how frequently updates occur
+      console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);
+      
+      // Update the UI with error handling
+      try {
+        messageElement.innerHTML = message;
+      } catch (updateError) {
+        console.error("Error updating notification message:", updateError);
+      }
+    });
   } catch (error) {
     console.error("Error in updateUsageNotification:", error);
   }
