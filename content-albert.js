@@ -103,21 +103,130 @@ function detectCurrentModel() {
 }
 
 /**
- * Saves or updates a conversation exchange
+ * Saves or updates a conversation exchange (for backward compatibility)
  * @param {string} userMessage - The user's message
  * @param {string} assistantResponse - Albert's response
  */
 function saveLog(userMessage, assistantResponse) {
-  const userMessageKey = userMessage.substring(0, 100);
-  
-  // Estimate token count (4 chars ≈ 1 token for French/English text)
+  // Estimate token count if not provided
   const userTokenCount = Math.ceil(userMessage.length / 4);
   const assistantTokenCount = Math.ceil(assistantResponse.length / 4);
+  
+  saveLogWithTokens(userMessage, assistantResponse, userTokenCount, assistantTokenCount);
+}
+
+/**
+ * Extracts token information from info button aria-label
+ * @param {Element} container - The message container element
+ * @returns {Object} Token counts
+ */
+function extractTokenInfo(container) {
+  try {
+    // Look for the info button with token information
+    const infoButton = container.querySelector('[aria-label*="prompt_tokens"]');
+    if (infoButton) {
+      const ariaLabel = infoButton.getAttribute('aria-label');
+      const promptMatch = ariaLabel.match(/prompt_tokens:\s*(\d+)/);
+      const completionMatch = ariaLabel.match(/completion_tokens:\s*(\d+)/);
+      const totalMatch = ariaLabel.match(/total_tokens:\s*(\d+)/);
+      
+      return {
+        promptTokens: promptMatch ? parseInt(promptMatch[1]) : 0,
+        completionTokens: completionMatch ? parseInt(completionMatch[1]) : 0,
+        totalTokens: totalMatch ? parseInt(totalMatch[1]) : 0
+      };
+    }
+  } catch (e) {
+    console.error("Error extracting token info:", e);
+  }
+  
+  return { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+}
+
+/**
+ * Scans the DOM for Albert conversation messages
+ */
+function scanMessages() {
+  if (!isExtensionContextValid) {
+    return false;
+  }
+  
+  try {
+    // Look for user messages with class 'user-message'
+    const userMessageElements = document.querySelectorAll('.user-message');
+    
+    // Look for assistant messages with class 'chat-assistant'
+    const assistantContainers = document.querySelectorAll('.chat-assistant');
+    
+    console.log(`Found ${userMessageElements.length} user messages and ${assistantContainers.length} assistant messages`);
+    
+    let processedPairs = 0;
+    
+    // Process each user message
+    userMessageElements.forEach((userElement, index) => {
+      try {
+        // Get user message text
+        const userTextElement = userElement.querySelector('.rounded-3xl p');
+        const userMessage = userTextElement ? userTextElement.textContent.trim() : '';
+        
+        if (!userMessage) return;
+        
+        // Find the corresponding assistant message
+        // Look for the next assistant message after this user message
+        const userContainer = userElement.closest('.flex.flex-col.justify-between');
+        let assistantContainer = userContainer ? userContainer.nextElementSibling : null;
+        
+        // Keep looking until we find an assistant message
+        while (assistantContainer && !assistantContainer.querySelector('.chat-assistant')) {
+          assistantContainer = assistantContainer.nextElementSibling;
+        }
+        
+        if (assistantContainer) {
+          const assistantTextElement = assistantContainer.querySelector('#response-content-container p');
+          const assistantResponse = assistantTextElement ? assistantTextElement.textContent.trim() : '';
+          
+          if (assistantResponse) {
+            // Extract token information from the info button
+            const tokenInfo = extractTokenInfo(assistantContainer);
+            
+            // Use actual token counts if available, otherwise estimate
+            const userTokenCount = tokenInfo.promptTokens > 0 ? tokenInfo.promptTokens : Math.ceil(userMessage.length / 4);
+            const assistantTokenCount = tokenInfo.completionTokens > 0 ? tokenInfo.completionTokens : Math.ceil(assistantResponse.length / 4);
+            
+            console.log(`Processing message pair ${index + 1}: User tokens=${userTokenCount}, Assistant tokens=${assistantTokenCount}`);
+            
+            // Save the log with actual token counts
+            saveLogWithTokens(userMessage, assistantResponse, userTokenCount, assistantTokenCount);
+            processedPairs++;
+          }
+        }
+      } catch (messageError) {
+        console.error("Error processing message pair:", messageError);
+      }
+    });
+    
+    console.log(`Processed ${processedPairs} message pairs`);
+    return processedPairs > 0;
+  } catch (e) {
+    console.error("Error scanning messages:", e);
+    return false;
+  }
+}
+
+/**
+ * Saves or updates a conversation exchange with specific token counts
+ * @param {string} userMessage - The user's message
+ * @param {string} assistantResponse - Albert's response
+ * @param {number} userTokenCount - Actual user token count
+ * @param {number} assistantTokenCount - Actual assistant token count
+ */
+function saveLogWithTokens(userMessage, assistantResponse, userTokenCount, assistantTokenCount) {
+  const userMessageKey = userMessage.substring(0, 100);
   
   // Detect current model
   currentModel = detectCurrentModel();
   
-  // Calculate environmental impact
+  // Calculate environmental impact using actual token counts
   const energyData = calculateEnergyAndEmissions(assistantTokenCount, currentModel);
   const energyUsage = energyData.totalEnergy;
   const co2Emissions = energyData.co2Emissions;
@@ -137,6 +246,7 @@ function saveLog(userMessage, assistantResponse) {
         ...existingLog,
         assistantResponse: assistantResponse,
         assistantTokenCount: assistantTokenCount,
+        userTokenCount: userTokenCount,
         energyUsage: energyData.totalEnergy,
         co2Emissions: energyData.co2Emissions,
         model: currentModel,
@@ -173,87 +283,6 @@ function saveLog(userMessage, assistantResponse) {
 }
 
 /**
- * Scans the DOM for Albert conversation messages
- */
-function scanMessages() {
-  if (!isExtensionContextValid) {
-    return false;
-  }
-  
-  try {
-    // Look for message containers in Albert's UI
-    // Based on the HTML structure, messages seem to be in markdown containers
-    const messageContainers = document.querySelectorAll('.message, .markdown, [data-message]');
-    
-    let userMessages = [];
-    let assistantMessages = [];
-    
-    // Try to identify user and assistant messages
-    messageContainers.forEach(container => {
-      // Check if it's a user message (might have specific classes or attributes)
-      const isUserMessage = container.classList.contains('user-message') || 
-                           container.getAttribute('data-role') === 'user' ||
-                           container.closest('[data-message-author-role="user"]');
-      
-      // Check if it's an assistant message
-      const isAssistantMessage = container.classList.contains('assistant-message') || 
-                                container.getAttribute('data-role') === 'assistant' ||
-                                container.closest('[data-message-author-role="assistant"]');
-      
-      const messageText = container.textContent.trim();
-      
-      if (isUserMessage && messageText) {
-        userMessages.push({ element: container, text: messageText });
-      } else if (isAssistantMessage && messageText) {
-        assistantMessages.push({ element: container, text: messageText });
-      }
-    });
-    
-    // If we couldn't identify messages with specific markers, try to pair them by position
-    if (userMessages.length === 0 && assistantMessages.length === 0) {
-      const allMessages = Array.from(messageContainers).filter(container => 
-        container.textContent.trim().length > 0
-      );
-      
-      // Assume alternating pattern: user, assistant, user, assistant...
-      for (let i = 0; i < allMessages.length; i += 2) {
-        if (i < allMessages.length) {
-          userMessages.push({ 
-            element: allMessages[i], 
-            text: allMessages[i].textContent.trim() 
-          });
-        }
-        if (i + 1 < allMessages.length) {
-          assistantMessages.push({ 
-            element: allMessages[i + 1], 
-            text: allMessages[i + 1].textContent.trim() 
-          });
-        }
-      }
-    }
-    
-    // Process message pairs
-    for (let i = 0; i < Math.min(userMessages.length, assistantMessages.length); i++) {
-      try {
-        const userMessage = userMessages[i].text;
-        const assistantResponse = assistantMessages[i].text;
-        
-        if (userMessage && assistantResponse) {
-          saveLog(userMessage, assistantResponse);
-        }
-      } catch (messageError) {
-        console.error("Error processing message pair:", messageError);
-      }
-    }
-    
-    return userMessages.length > 0 || assistantMessages.length > 0;
-  } catch (e) {
-    console.error("Error scanning messages:", e);
-    return false;
-  }
-}
-
-/**
  * Sets up a MutationObserver to detect when new messages are added to the DOM
  */
 function setupObserver() {
@@ -266,12 +295,15 @@ function setupObserver() {
       if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            // Check if it's a message-related element
+            // Check if it's a message-related element or contains relevant classes
+            const nodeString = node.outerHTML || '';
             if (node.classList && (
-                node.classList.contains('message') ||
-                node.classList.contains('markdown') ||
-                node.querySelector('.message') ||
-                node.querySelector('.markdown')
+                node.classList.contains('user-message') ||
+                node.classList.contains('chat-assistant') ||
+                node.classList.contains('markdown-prose') ||
+                node.querySelector('.user-message') ||
+                node.querySelector('.chat-assistant') ||
+                nodeString.includes('response-content-container')
             )) {
               shouldScan = true;
               break;
@@ -279,7 +311,14 @@ function setupObserver() {
           }
         }
       } else if (mutation.type === 'characterData') {
-        shouldScan = true;
+        // Check if the text change is within a message container
+        const targetElement = mutation.target.parentElement;
+        if (targetElement && (
+            targetElement.closest('.chat-assistant') ||
+            targetElement.closest('.user-message')
+        )) {
+          shouldScan = true;
+        }
       }
       
       if (shouldScan) break;
@@ -294,10 +333,11 @@ function setupObserver() {
         updateUsageNotification();
       }
       
+      // Also do a delayed scan to catch completed responses and token info
       setTimeout(() => {
         scanMessages();
         updateUsageNotification();
-      }, 1000);
+      }, 1500);
     }
   });
   
