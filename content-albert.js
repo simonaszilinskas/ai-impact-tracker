@@ -85,9 +85,29 @@ function detectCurrentModel() {
   const modelSelector = document.querySelector('#model-selector-0-button');
   if (modelSelector) {
     const modelText = modelSelector.textContent.toLowerCase();
+    console.log(`Model selector text: "${modelText}"`);
     if (modelText.includes('complexe') || modelText.includes('large')) {
+      console.log('Detected large model from selector');
       return 'large';
     }
+  }
+  
+  // Check console logs for model information
+  // Look for elements that might contain model info
+  const scripts = document.querySelectorAll('script');
+  for (const script of scripts) {
+    const content = script.textContent;
+    if (content.includes('albert-large')) {
+      console.log('Detected large model from script content');
+      return 'large';
+    }
+  }
+  
+  // Check for model in aria-labels (from the example you provided)
+  const modelElements = document.querySelectorAll('[aria-label*="Tâches complexes"], [aria-label*="complexes"]');
+  if (modelElements.length > 0) {
+    console.log('Detected large model from aria-label');
+    return 'large';
   }
   
   // Also check for any model indicators in the UI
@@ -95,10 +115,12 @@ function detectCurrentModel() {
   for (const indicator of modelIndicators) {
     const text = indicator.textContent.toLowerCase();
     if (text.includes('complexe') || text.includes('large')) {
+      console.log('Detected large model from indicator');
       return 'large';
     }
   }
   
+  console.log('Defaulting to small model');
   return 'small'; // Default to small model
 }
 
@@ -645,6 +667,8 @@ function calculateEnergyAndEmissions(outputTokens, model = 'small') {
   const activeParams = totalParams; // Albert models are not MoE
   const activeParamsBillions = activeParams / 1e9;
   
+  console.log(`Calculating energy for ${outputTokens} tokens, model: ${model}, params: ${activeParamsBillions}B`);
+  
   // Energy consumption per token
   const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
   
@@ -668,12 +692,16 @@ function calculateEnergyAndEmissions(outputTokens, model = 'small') {
   // Apply data center overhead
   const totalEnergy = PUE * serverEnergy;
   
+  console.log(`Energy calculation: energyPerToken=${energyPerToken}, gpuEnergy=${gpuEnergy}, serverEnergy=${serverEnergy}, totalEnergy=${totalEnergy}`);
+  
   // Ensure minimum energy value
   const minEnergy = 0.01;
   const normalizedEnergy = Math.max(totalEnergy, minEnergy);
   
   // Calculate CO2 emissions using French emission factor
   const co2Emissions = normalizedEnergy * FRANCE_EMISSION_FACTOR;
+  
+  console.log(`Final normalized energy: ${normalizedEnergy} Wh`);
   
   return {
     numGPUs,
