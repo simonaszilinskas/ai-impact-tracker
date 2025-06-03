@@ -4,7 +4,7 @@
     "version": "1.7",
     "description": "Estimate the energy and water footprint of your AI usage",
     "permissions": ["storage"],
-    "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+    "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*", "https://albert.numerique.gouv.fr/*"],
     "background": {
       "service_worker": "background.js"
     },
@@ -18,6 +18,11 @@
       {
         "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
         "js": ["content.js"],
+        "run_at": "document_start"
+      },
+      {
+        "matches": ["https://albert.numerique.gouv.fr/*"],
+        "js": ["content-albert.js"],
         "run_at": "document_start"
       }
     ],

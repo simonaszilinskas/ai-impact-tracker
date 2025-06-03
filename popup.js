@@ -136,7 +136,7 @@ function loadLogs() {
       return; // We already initialized with empty stats
     }
     
-    storage.get(['chatgptLogs', 'extensionVersion'], function(result) {
+    storage.get(['chatgptLogs', 'albertLogs', 'extensionVersion'], function(result) {
       // Check for chrome.runtime.lastError safely
       const lastError = chrome.runtime && chrome.runtime.lastError;
       if (lastError) {
@@ -149,12 +149,17 @@ function loadLogs() {
         return;
       }
       
-      const logs = result.chatgptLogs || [];
+      const chatgptLogs = result.chatgptLogs || [];
+      const albertLogs = result.albertLogs || [];
       const version = result.extensionVersion || 'unknown';
-      console.log(`Loaded ${logs.length} logs from storage (extension version: ${version})`);
+      
+      // Combine logs from both platforms
+      const allLogs = [...chatgptLogs, ...albertLogs];
+      
+      console.log(`Loaded ${chatgptLogs.length} ChatGPT logs and ${albertLogs.length} Albert logs (total: ${allLogs.length}) from storage (extension version: ${version})`);
       
       // Validate logs format
-      if (!Array.isArray(logs)) {
+      if (!Array.isArray(chatgptLogs) || !Array.isArray(albertLogs)) {
         console.error('Invalid logs format in storage!');
         // Initialize with empty array as fallback
         updateTodayStats([]);
@@ -163,29 +168,30 @@ function loadLogs() {
         // Attempt to repair storage
         chrome.storage.local.set({ 
           chatgptLogs: [],
+          albertLogs: [],
           extensionVersion: chrome.runtime.getManifest().version 
         });
         return;
       }
       
       // Log some details about the logs if any exist
-      if (logs.length > 0) {
-        console.log('First log:', logs[0]);
-        console.log('Last log:', logs[logs.length - 1]);
+      if (allLogs.length > 0) {
+        console.log('First log:', allLogs[0]);
+        console.log('Last log:', allLogs[allLogs.length - 1]);
         
         // Calculate total energy usage
-        const totalEnergy = logs.reduce((sum, log) => sum + (log.energyUsage || 0), 0);
+        const totalEnergy = allLogs.reduce((sum, log) => sum + (log.energyUsage || 0), 0);
         console.log(`Total energy usage in logs: ${totalEnergy.toFixed(2)} Wh`);
         
         // Check for logs with missing energy values
-        const logsWithoutEnergy = logs.filter(log => log.energyUsage === undefined || log.energyUsage === null);
+        const logsWithoutEnergy = allLogs.filter(log => log.energyUsage === undefined || log.energyUsage === null);
         if (logsWithoutEnergy.length > 0) {
           console.warn(`${logsWithoutEnergy.length} logs have missing energy usage values`);
         }
       }
       
-      updateTodayStats(logs);
-      updateLifetimeStats(logs);
+      updateTodayStats(allLogs);
+      updateLifetimeStats(allLogs);
     });
   } catch (e) {
     console.error('Error in loadLogs:', e);
@@ -204,18 +210,20 @@ function tryLoadLogsAgain() {
       return; // We already initialized with empty stats
     }
     
-    storage.get('chatgptLogs', function(result) {
+    storage.get(['chatgptLogs', 'albertLogs'], function(result) {
       // Safely handle result
       if (!result) {
         console.warn('No result from storage in retry');
         return;
       }
       
-      const logs = Array.isArray(result.chatgptLogs) ? result.chatgptLogs : [];
-      console.log(`Retry loaded ${logs.length} logs from storage`);
+      const chatgptLogs = Array.isArray(result.chatgptLogs) ? result.chatgptLogs : [];
+      const albertLogs = Array.isArray(result.albertLogs) ? result.albertLogs : [];
+      const allLogs = [...chatgptLogs, ...albertLogs];
+      console.log(`Retry loaded ${chatgptLogs.length} ChatGPT logs and ${albertLogs.length} Albert logs (total: ${allLogs.length}) from storage`);
       
-      updateTodayStats(logs);
-      updateLifetimeStats(logs);
+      updateTodayStats(allLogs);
+      updateLifetimeStats(allLogs);
     });
   } catch (e) {
     console.error('Error in retry loadLogs:', e);
