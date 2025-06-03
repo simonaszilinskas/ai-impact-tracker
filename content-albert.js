@@ -833,7 +833,8 @@ function initialize() {
   initializeWithRetry(3);
   
   // Setup periodic storage validation
-  setInterval(validateAndRepairStorage, 5 * 60 * 1000);
+  const storageValidationInterval = setInterval(validateAndRepairStorage, 5 * 60 * 1000);
+  intervalIds.push(storageValidationInterval);
   
   // Setup when DOM is ready
   const setupUI = () => {
@@ -845,13 +846,14 @@ function initialize() {
     }
     
     // Monitor for model changes
-    setInterval(() => {
+    const modelMonitorInterval = setInterval(() => {
       const newModel = detectCurrentModel();
       if (newModel !== currentModel) {
         currentModel = newModel;
         updateUsageNotification();
       }
     }, 2000);
+    intervalIds.push(modelMonitorInterval);
   };
   
   if (document.readyState === "complete" || document.readyState === "interactive") {
