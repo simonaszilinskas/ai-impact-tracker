@@ -770,12 +770,23 @@ function notifyEstimationMethodChange(method) {
   // Send message to all ChatGPT tabs to update their method for new calculations
   if (chrome.tabs) {
     chrome.tabs.query({ url: "https://chatgpt.com/*" }, function(tabs) {
+      if (tabs.length === 0) {
+        console.log('No ChatGPT tabs found - estimation method will apply to future tabs');
+        return;
+      }
+      
       tabs.forEach(tab => {
         chrome.tabs.sendMessage(tab.id, {
           type: 'estimationMethodChanged',
           method: method
         }, function(response) {
-          // Fire and forget - just updating the method for future calculations
+          // Check for runtime errors and handle them gracefully
+          if (chrome.runtime.lastError) {
+            console.log(`Could not notify tab ${tab.id}: ${chrome.runtime.lastError.message}`);
+            // This is normal - tab might not have the content script loaded yet
+          } else {
+            console.log(`Successfully notified tab ${tab.id} of estimation method change`);
+          }
         });
       });
     });
