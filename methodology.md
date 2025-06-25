@@ -6,42 +6,100 @@ This page tries to outline the methodology used by the AI Impact Tracker extensi
 
 - **Real-time Tracking**: Monitors your conversations with ChatGPT and calculates energy consumption based on token usage.
 - **Daily & Total Usage**: Tracks both your daily usage and your cumulative impact over time.
+- **Dual Estimation Methods**: Choose between community estimates (academic research) and Sam Altman's estimation for different perspectives on energy consumption.
 - **Movable Interface**: The overlay notification can be dragged and positioned anywhere on the screen for convenience.
-- **Persistence**: Your preferred overlay position is remembered between sessions.
+- **Persistence**: Your preferred overlay position and estimation method are remembered between sessions.
 
 ## How energy consumption of LLMs is calculated
+
+The AI Impact Tracker offers two different estimation methods, each providing a different perspective on ChatGPT's energy consumption:
+
+### Estimation Methods
+
+#### 1. Community Estimates (Default)
+Based on academic research and the EcoLogits methodology, modeling ChatGPT as a large Mixture of Experts (MoE) model.
+
+#### 2. Sam Altman's Estimation  
+Based on OpenAI CEO Sam Altman's blog post statement that ChatGPT consumes approximately 0.34 Wh per query.
 
 ### Core methodology
 
 The calculations focus on inference-time energy consumption, which represents the energy used when interacting with an LLM.
 
-Key components of the calculation:
+Key components shared by both methods:
 * **Token-based estimation**: Energy consumption is calculated per output token, using character count as a proxy (roughly 4 characters = 1 token for English text)
-* **Model architecture consideration**: Special handling for Mixture of Experts (MoE) models, which only activate a subset of parameters during inference
-* **Data center overhead**: Inclusion of Power Usage Effectiveness (PUE) to account for cooling and infrastructure costs
+* **Per-query scaling**: Sam Altman's estimation is scaled from per-query to per-token based on average output length (781 tokens)
+* **Real-time calculation**: Both methods calculate energy consumption as conversations happen
 
-### Energy consumption formula
+### Energy consumption formulas
 
-The energy consumption per token is calculated using the following formula:
+#### Community Estimates Formula
+
+The energy consumption per token is calculated using the EcoLogits methodology:
 
 ```
 energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA
+totalEnergy = outputTokens * energyPerToken * PUE
 ```
 
 Where:
 * **ENERGY_ALPHA** = 8.91e-5 Wh/token/B-params (Energy coefficient for model parameters)
 * **ENERGY_BETA** = 1.43e-3 Wh/token (Base energy per token)
-* **activeParamsBillions** = Number of active parameters in billions
+* **activeParamsBillions** = 55 billion (12.5% of 440B total parameters)
+* **PUE** = 1.2 (Power Usage Effectiveness for data center overhead)
 
 This formula is derived from academic research on LLM energy consumption, scaling with both the number of active parameters and the total tokens processed.
 
-### Assumptions for ChatGPT (GPT 4o)
+#### Sam Altman's Estimation Formula
+
+Based on the stated 0.34 Wh per query, scaled to per-token usage:
+
+```
+energyPerToken = 0.34 Wh / 781 tokens ≈ 0.000435 Wh/token
+totalEnergy = outputTokens * energyPerToken
+```
+
+Where:
+* **0.34 Wh** = Energy per query as stated by Sam Altman
+* **781 tokens** = Average output length used for scaling
+* **outputTokens** = Actual tokens in the assistant's response
+
+#### Comparison of Methods
+
+The two estimation methods produce significantly different results:
+* **Community estimates**: ~0.09 Wh per token (based on computational modeling)
+* **Sam Altman's estimation**: ~0.0004 Wh per token (scaled from industry statement)
+* **Difference**: Community estimates are approximately **14.5x higher** than Sam Altman's estimation
+
+This difference reflects the ongoing debate in the research community about actual AI energy consumption, with academic models typically showing higher energy usage than industry statements.
+
+### Assumptions for ChatGPT (GPT 4o) - Community Estimates
 
 * **Total parameters**: 440 billion parameters
 * **Active parameters**: ~55 billion (12.5% activation ratio)
 * **Quantization**: 4-bit precision 
 * **Data center PUE**: 1.2 
 * **GPU configuration**: Estimated 8 GPUs per server, 80GB memory per GPU
+
+### Sources and References
+
+#### Academic Research (Community Estimates)
+* **EcoLogits methodology**: Derived from academic research on LLM energy consumption patterns
+* **Mixture of Experts modeling**: Based on published research about MoE architectures and their energy characteristics
+* **Parameter scaling**: Uses established relationships between model size and energy consumption
+
+#### Industry Data (Sam Altman's Estimation)
+* **Source**: Sam Altman's public statement regarding ChatGPT energy consumption
+* **Context**: Industry perspective on actual operational energy usage
+* **Scaling**: Adapted from per-query to per-token based on typical response lengths
+
+#### Switching Between Methods
+
+Users can toggle between estimation methods using the dropdown in the extension popup:
+* **Default**: Community estimates (more conservative, research-based)
+* **Alternative**: Sam Altman's estimation (industry perspective, significantly lower)
+* **Real-time switching**: All historical data is recalculated when switching methods
+* **Persistence**: Your choice is saved and remembered across browser sessions
 
 ## Calculating real-world equivalences
 
@@ -110,7 +168,13 @@ Derived from “active energy per 100 runs” benchmarks for VFAC PM-driven elev
 
 # Conclusion
 
-The AI Impact Tracker provides estimates of LLM energy consumption and tries to contextualise them through familiar equivalents. Exact energy measurements would require direct data from model providers.
+The AI Impact Tracker provides two different perspectives on LLM energy consumption, reflecting the ongoing debate between academic research and industry statements. By offering both community estimates (research-based) and Sam Altman's estimation (industry-based), users can understand the range of possible energy impacts and make informed decisions about their AI usage.
+
+The significant difference between the two methods (14.5x) highlights the uncertainty in current AI energy consumption estimates and the need for more transparency from AI providers regarding their actual energy usage.
+
+All estimates are contextualised through familiar equivalents to help users understand the real-world impact of their AI interactions.
+
+**Important Note**: These are estimates based on available information. Exact energy measurements would require direct data from model providers, which is currently not publicly available.
 
 Contributions to improve these calculations are welcome. If you have suggestions, corrections, or additional data sources that could enhance the accuracy of the estimates, please open an issue or submit a pull request.
 
