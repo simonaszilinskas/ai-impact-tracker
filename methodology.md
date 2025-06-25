@@ -172,7 +172,7 @@ The AI Impact Tracker provides two different perspectives on LLM energy consumpt
 
 The significant difference between the two methods (14.5x) highlights the uncertainty in current AI energy consumption estimates and the need for more transparency from AI providers regarding their actual energy usage.
 
-All estimates are contextualised through familiar equivalents to help users understand the real-world impact of their AI interactions.
+All estimates are contextualized through familiar equivalents to help users understand the real-world impact of their AI interactions.
 
 **Important Note**: These are estimates based on available information. Exact energy measurements would require direct data from model providers, which is currently not publicly available.
 
