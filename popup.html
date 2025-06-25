@@ -57,11 +57,10 @@
       padding: 14px 16px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 16px;
       position: sticky;
       top: 0;
       z-index: 1000;
-      min-height: 50px;
     }
     
     .info-icon {
@@ -107,27 +106,17 @@
       color: var(--primary-color);
     }
     
-    .estimation-toggle {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2px;
-      flex-shrink: 0;
-    }
-    
     .estimation-select {
-      font-size: 12px;
-      padding: 4px 8px;
+      font-size: 13px;
+      padding: 6px 10px;
       border: 1px solid var(--border-color);
       border-radius: 4px;
       background-color: white;
       color: var(--text-color);
       font-family: inherit;
       cursor: pointer;
-      min-width: 130px;
-      max-width: 130px;
-      height: auto;
-      line-height: 1.2;
+      min-width: 160px;
+      flex-shrink: 0;
     }
     
     .estimation-select:focus {
@@ -135,17 +124,11 @@
       border-color: var(--primary-color);
     }
     
-    .methodology-links {
-      display: flex;
-      gap: 8px;
-      font-size: 10px;
-      justify-content: flex-start;
-    }
-    
     .methodology-link {
       color: var(--primary-color);
       text-decoration: none;
       cursor: pointer;
+      font-size: 12px;
     }
     
     .methodology-link:hover {
@@ -156,6 +139,13 @@
       display: flex;
       background-color: var(--background-color);
       padding: 8px 12px;
+      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .tabs-group {
+      display: flex;
       gap: 8px;
     }
     
@@ -342,22 +332,6 @@
       color: var(--muted-text);
     }
     
-    .methodology-link {
-      text-align: center;
-      margin: 12px 0;
-      padding-bottom: 12px;
-    }
-    
-    .methodology-link a {
-      color: var(--link-color);
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 500;
-    }
-    
-    .methodology-link a:hover {
-      text-decoration: underline;
-    }
     
     /* Email Collection Overlay */
     .email-overlay {
@@ -522,20 +496,18 @@
       <div class="icon"><i class="ri-leaf-line"></i></div>
       <div>AI impact tracker</div>
     </div>
-    <div class="estimation-toggle">
-      <select id="estimation-method" class="estimation-select">
-        <option value="community">Community estimates</option>
-        <option value="altman">Sam Altman's estimation</option>
-      </select>
-      <div class="methodology-links">
-        <a href="https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md" target="_blank" class="methodology-link">methodology</a>
-      </div>
-    </div>
+    <select id="estimation-method" class="estimation-select">
+      <option value="community">Community estimates</option>
+      <option value="altman">Sam Altman's estimation</option>
+    </select>
   </div>
   
   <div class="tab-container">
-    <div class="tab active" id="today-tab">Today</div>
-    <div class="tab" id="lifetime-tab">Lifetime</div>
+    <div class="tabs-group">
+      <div class="tab active" id="today-tab">Today</div>
+      <div class="tab" id="lifetime-tab">Lifetime</div>
+    </div>
+    <a href="https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md" target="_blank" class="methodology-link">methodology</a>
   </div>
   
   <!-- Today Stats Container -->
