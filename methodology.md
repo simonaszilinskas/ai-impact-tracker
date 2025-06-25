@@ -6,7 +6,7 @@ This page tries to outline the methodology used by the AI Impact Tracker extensi
 
 - **Real-time Tracking**: Monitors your conversations with ChatGPT and calculates energy consumption based on token usage.
 - **Daily & Total Usage**: Tracks both your daily usage and your cumulative impact over time.
-- **Dual Estimation Methods**: Choose between community estimates (academic research) and Sam Altman's estimation for different perspectives on energy consumption.
+- **Dual Estimation Methods**: Choose between community estimates (academic research + info leaks + latency and pricing info) and Sam Altman's estimation in his [blog post](https://blog.samaltman.com/the-gentle-singularity)
 - **Movable Interface**: The overlay notification can be dragged and positioned anywhere on the screen for convenience.
 - **Persistence**: Your preferred overlay position and estimation method are remembered between sessions.
 
@@ -17,19 +17,19 @@ The AI Impact Tracker offers two different estimation methods, each providing a 
 ### Estimation Methods
 
 #### 1. Community Estimates (Default)
-Based on academic research and the EcoLogits methodology, modeling ChatGPT as a large Mixture of Experts (MoE) model.
+Based on academic research and inspired by the EcoLogits methodology, modeling the model behind ChatGPT as a large Mixture of Experts (MoE).
 
 #### 2. Sam Altman's Estimation  
-Based on OpenAI CEO Sam Altman's blog post statement that ChatGPT consumes approximately 0.34 Wh per query.
+Based on OpenAI CEO Sam Altman's [blog post](https://blog.samaltman.com/the-gentle-singularity) statement that ChatGPT consumes approximately 0.34 Wh per query. This figure has been contested because it lacks transparency about what it includes, is unsupported by publicly verifiable data, and appears inconsistent with independent estimates of the infrastructure and energy needed to support ChatGPT’s global usage.
 
 ### Core methodology
 
 The calculations focus on inference-time energy consumption, which represents the energy used when interacting with an LLM.
 
 Key components shared by both methods:
-* **Token-based estimation**: Energy consumption is calculated per output token, using character count as a proxy (roughly 4 characters = 1 token for English text)
+* **Token-based estimation**: Energy consumption is calculated per output token, using character count as a proxy (roughly 4 characters = 1 token)
 * **Per-query scaling**: Sam Altman's estimation is scaled from per-query to per-token based on average output length (781 tokens)
-* **Real-time calculation**: Both methods calculate energy consumption as conversations happen
+* **Real-time calculation**: Both methods calculate energy consumption as conversations happen based on the per-token estimates
 
 ### Energy consumption formulas
 
@@ -61,17 +61,8 @@ totalEnergy = outputTokens * energyPerToken
 
 Where:
 * **0.34 Wh** = Energy per query as stated by Sam Altman
-* **781 tokens** = Average output length used for scaling
+* **781 tokens** = Average output length used for scaling, based on the compar:IA conversation dataset's average for 170k conversations
 * **outputTokens** = Actual tokens in the assistant's response
-
-#### Comparison of Methods
-
-The two estimation methods produce significantly different results:
-* **Community estimates**: ~0.09 Wh per token (based on computational modeling)
-* **Sam Altman's estimation**: ~0.0004 Wh per token (scaled from industry statement)
-* **Difference**: Community estimates are approximately **14.5x higher** than Sam Altman's estimation
-
-This difference reflects the ongoing debate in the research community about actual AI energy consumption, with academic models typically showing higher energy usage than industry statements.
 
 ### Assumptions for ChatGPT (GPT 4o) - Community Estimates
 
@@ -80,26 +71,6 @@ This difference reflects the ongoing debate in the research community about actu
 * **Quantization**: 4-bit precision 
 * **Data center PUE**: 1.2 
 * **GPU configuration**: Estimated 8 GPUs per server, 80GB memory per GPU
-
-### Sources and References
-
-#### Academic Research (Community Estimates)
-* **EcoLogits methodology**: Derived from academic research on LLM energy consumption patterns
-* **Mixture of Experts modeling**: Based on published research about MoE architectures and their energy characteristics
-* **Parameter scaling**: Uses established relationships between model size and energy consumption
-
-#### Industry Data (Sam Altman's Estimation)
-* **Source**: Sam Altman's public statement regarding ChatGPT energy consumption
-* **Context**: Industry perspective on actual operational energy usage
-* **Scaling**: Adapted from per-query to per-token based on typical response lengths
-
-#### Switching Between Methods
-
-Users can toggle between estimation methods using the dropdown in the extension popup:
-* **Default**: Community estimates (more conservative, research-based)
-* **Alternative**: Sam Altman's estimation (industry perspective, significantly lower)
-* **Real-time switching**: All historical data is recalculated when switching methods
-* **Persistence**: Your choice is saved and remembered across browser sessions
 
 ## Calculating real-world equivalences
 
