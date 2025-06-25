@@ -42,6 +42,36 @@ function checkExtensionContext() {
 }
 
 /**
+ * Gets the current estimation method from storage
+ * @returns {Promise<string>} 'community' or 'altman'
+ */
+function getEstimationMethod() {
+  return new Promise((resolve) => {
+    if (!checkExtensionContext()) {
+      console.log('Content script: No extension context, defaulting to community');
+      resolve('community'); // Default to community estimates
+      return;
+    }
+    
+    try {
+      chrome.storage.local.get(['estimationMethod'], function(result) {
+        if (chrome.runtime.lastError) {
+          console.error('Content script: Error getting estimation method:', chrome.runtime.lastError);
+          resolve('community');
+        } else {
+          const method = result.estimationMethod || 'community';
+          console.log('Content script: Loaded estimation method from storage:', method);
+          resolve(method);
+        }
+      });
+    } catch (error) {
+      console.error('Content script: Error accessing storage for estimation method:', error);
+      resolve('community');
+    }
+  });
+}
+
+/**
  * Saves data to Chrome's local storage
  * Handles extension context invalidation gracefully
  * @param {Object} data - Data object to store
@@ -84,7 +114,7 @@ function saveToStorage(data) {
  * @param {string} userMessage - The user's message
  * @param {string} assistantResponse - ChatGPT's response
  */
-function saveLog(userMessage, assistantResponse) {
+async function saveLog(userMessage, assistantResponse) {
   // Use message prefix as unique identifier for this exchange
   const userMessageKey = userMessage.substring(0, 100);
   
@@ -92,8 +122,9 @@ function saveLog(userMessage, assistantResponse) {
   const userTokenCount = Math.ceil(userMessage.length / 4);
   const assistantTokenCount = Math.ceil(assistantResponse.length / 4);
   
-  // Calculate environmental impact
-  const energyData = calculateEnergyAndEmissions(assistantTokenCount);
+  // Get the current estimation method and calculate environmental impact
+  const estimationMethod = await getEstimationMethod();
+  const energyData = calculateEnergyAndEmissions(assistantTokenCount, estimationMethod);
   const energyUsage = energyData.totalEnergy;
   const co2Emissions = energyData.co2Emissions;
   
@@ -158,7 +189,7 @@ function saveLog(userMessage, assistantResponse) {
  * Uses data attributes specific to ChatGPT's DOM structure
  * Includes error handling to prevent extension crashes
  */
-function scanMessages() {
+async function scanMessages() {
   // Skip if extension context is invalidated
   if (!isExtensionContextValid) {
     return false;
@@ -208,7 +239,7 @@ function scanMessages() {
                   
                   if (userMessage && assistantResponse) {
                     // Save any non-empty exchange
-                    saveLog(userMessage, assistantResponse);
+                    await saveLog(userMessage, assistantResponse);
                     foundMessages = true;
                   }
                 } catch (altMessageError) {
@@ -240,7 +271,7 @@ function scanMessages() {
           
           if (userMessage) {
             // Save any non-empty exchange
-            saveLog(userMessage, assistantResponse);
+            await saveLog(userMessage, assistantResponse);
           }
         } catch (messageError) {
           console.error("Error processing message pair:", messageError);
@@ -309,7 +340,7 @@ function setupFetchInterceptor() {
                   lastUpdateTime = now;
                   
                   // Quick scan for updates during active generation
-                  scanMessages();
+                  await scanMessages();
                   
                   // Update notification with latest data
                   updateUsageNotification();
@@ -322,8 +353,8 @@ function setupFetchInterceptor() {
               }
               
               // Scan after stream completes
-              setTimeout(() => {
-                scanMessages();
+              setTimeout(async () => {
+                await scanMessages();
                 updateUsageNotification();
               }, 1000);
             } catch {
@@ -348,7 +379,7 @@ function setupObserver() {
   // Track the time of the last update to avoid excessive updates
   let lastUpdateTime = 0;
   
-  const observer = new MutationObserver((mutations) => {
+  const observer = new MutationObserver(async (mutations) => {
     let shouldScan = false;
     
     // Check if any assistant messages were added or modified
@@ -381,15 +412,15 @@ function setupObserver() {
         lastUpdateTime = now;
         
         // Scan for new/updated content
-        scanMessages();
+        await scanMessages();
         
         // Update the notification with latest data
         updateUsageNotification();
       }
       
       // Also do delayed scans to catch fully completed responses
-      setTimeout(() => {
-        scanMessages();
+      setTimeout(async () => {
+        await scanMessages();
         updateUsageNotification();
       }, 1000);
     }
@@ -749,10 +780,10 @@ function initialize() {
   setInterval(validateAndRepairStorage, 5 * 60 * 1000); // Every 5 minutes
   
   // Setup when DOM is ready
-  const setupUI = () => {
+  const setupUI = async () => {
     setupFetchInterceptor();
     setupObserver();
-    scanMessages(); // Initial scan
+    await scanMessages(); // Initial scan
     
     // Create notification if not created yet
     if (!document.getElementById('ai-impact-notification')) {
@@ -770,7 +801,7 @@ function initialize() {
   
   // Monitor URL changes to detect new conversations
   let lastUrl = window.location.href;
-  setInterval(() => {
+  const urlMonitorInterval = setInterval(() => {
     if (lastUrl !== window.location.href) {
       lastUrl = window.location.href;
       
@@ -785,7 +816,7 @@ function initialize() {
       }
       
       // Scan after URL change
-      setTimeout(scanMessages, 1000);
+      setTimeout(async () => await scanMessages(), 1000);
     }
   }, 1000);
   intervalIds.push(urlMonitorInterval);
@@ -801,6 +832,38 @@ function initialize() {
       createUsageNotification();
     }
   }, 2 * 60 * 1000); // 2 minutes in milliseconds
+}
+
+
+/**
+ * Reloads logs from Chrome storage to sync with popup changes
+ */
+function reloadLogsFromStorage() {
+  return new Promise((resolve) => {
+    if (!checkExtensionContext()) {
+      resolve();
+      return;
+    }
+    
+    try {
+      chrome.storage.local.get(['chatgptLogs'], function(result) {
+        if (chrome.runtime.lastError) {
+          console.error('Error reloading logs from storage:', chrome.runtime.lastError);
+          resolve();
+        } else {
+          const storedLogs = result.chatgptLogs || [];
+          // Update the in-memory logs array with the recalculated values
+          logs.length = 0; // Clear existing logs
+          logs.push(...storedLogs); // Add the updated logs
+          console.log(`Reloaded ${logs.length} logs from storage`);
+          resolve();
+        }
+      });
+    } catch (error) {
+      console.error('Error accessing storage for log reload:', error);
+      resolve();
+    }
+  });
 }
 
 // Listen for messages from popup
@@ -821,6 +884,21 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
       }
     }
     return true;
+  } else if (message.type === 'estimationMethodChanged') {
+    // Acknowledge the change and reload logs from storage after a brief delay
+    console.log('Content script: Estimation method changed to:', message.method);
+    
+    // Wait a moment to ensure popup has finished saving, then reload
+    setTimeout(() => {
+      reloadLogsFromStorage().then(() => {
+        // Update the notification with the new calculations
+        updateUsageNotification();
+        console.log('Content script: Notification updated with new estimation method');
+      });
+    }, 100);
+    
+    sendResponse({ success: true });
+    return true;
   }
 });
   } catch (e) {
@@ -828,68 +906,95 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
   }
 }
 
+
 /**
- * Calculates energy usage and CO2 emissions based on EcoLogits methodology
+ * Calculates energy usage and CO2 emissions based on selected methodology
  * 
- * This implements the energy calculation model from https://arxiv.org/abs/2309.12456
- * with appropriate scaling for different model sizes and token counts.
- * Modified to account for Mixture of Experts (MoE) model architecture.
+ * This implements either:
+ * 1. EcoLogits methodology (community estimates) from https://arxiv.org/abs/2309.12456
+ * 2. Sam Altman's estimation (0.34 Wh per query, scaled by tokens)
  * 
  * @param {number} outputTokens - Number of tokens in the assistant's response
+ * @param {string} method - 'community' or 'altman'
  * @returns {Object} Energy usage and emissions data
  */
-function calculateEnergyAndEmissions(outputTokens) {
-  // ChatGPT is a Mixture of Experts (MoE) model with 440B total parameters
-  const totalParams = 440e9;
-  const activeRatio = 0.125; // 12.5% activation ratio for MoE models
-  const activeParams = 55e9; // 55B active parameters
-  const activeParamsBillions = activeParams / 1e9; // Convert to billions for calculations
-  
-  // Energy consumption per token (Wh/token) - based on ACTIVE parameters
-  // This is because energy consumption during inference is primarily determined by compute, 
-  // which is proportional to active parameters in MoE models
-  const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
-  
-  // Calculate GPU memory requirements - based on TOTAL parameters
-  // Memory footprint is determined by the total model size, not just active parameters
-  const memoryRequired = 1.2 * totalParams * GPU_BITS / 8; // in bytes
-  const numGPUs = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
-  
-  // Calculate inference latency - based on ACTIVE parameters
-  // Latency is determined by compute, which is proportional to active parameters in MoE models
-  const latencyPerToken = LATENCY_ALPHA * activeParamsBillions + LATENCY_BETA;
-  const totalLatency = outputTokens * latencyPerToken;
-  
-  // Calculate GPU energy consumption (Wh) - using active parameters for computation
-  const gpuEnergy = outputTokens * energyPerToken * numGPUs;
-  
-  // Calculate server energy excluding GPUs (Wh)
-  // Converting kW to Wh by multiplying by hours (latency / 3600)
-  const serverEnergyWithoutGPU = totalLatency * SERVER_POWER_WITHOUT_GPU * numGPUs / INSTALLED_GPUS / 3600 * 1000;
-  
-  // Total server energy (Wh)
-  const serverEnergy = serverEnergyWithoutGPU + gpuEnergy;
-  
-  // Apply data center overhead (PUE)
-  const totalEnergy = PUE * serverEnergy;
-  
-  // Ensure minimum energy value for visibility in UI
-  const minEnergy = 0.01; // Minimum 0.01 Wh to ensure visibility
-  const normalizedEnergy = Math.max(totalEnergy, minEnergy);
-  
-  // Calculate CO2 emissions (grams)
-  const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
-  
-  return {
-    numGPUs,
-    totalEnergy: normalizedEnergy,
-    co2Emissions,
-    modelDetails: {
-      totalParams: totalParams / 1e9,
-      activeParams: activeParams / 1e9,
-      activationRatio: activeRatio
-    }
-  };
+function calculateEnergyAndEmissions(outputTokens, method = 'community') {
+  if (method === 'altman') {
+    // Sam Altman's estimation: 0.34 Wh per query with 781 average output tokens
+    const altmanEnergyPerToken = 0.34 / 781; // ~0.000435 Wh per token
+    const totalEnergy = outputTokens * altmanEnergyPerToken;
+    
+    // Ensure minimum energy value for visibility in UI
+    const minEnergy = 0.01;
+    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
+    
+    // Calculate CO2 emissions (grams)
+    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
+    
+    return {
+      numGPUs: 1, // Simplified for Altman estimate
+      totalEnergy: normalizedEnergy,
+      co2Emissions,
+      modelDetails: {
+        method: 'altman',
+        energyPerToken: altmanEnergyPerToken
+      }
+    };
+  } else {
+    // Community estimates using EcoLogits methodology
+    // ChatGPT is a Mixture of Experts (MoE) model with 440B total parameters
+    const totalParams = 440e9;
+    const activeRatio = 0.125; // 12.5% activation ratio for MoE models
+    const activeParams = 55e9; // 55B active parameters
+    const activeParamsBillions = activeParams / 1e9; // Convert to billions for calculations
+    
+    // Energy consumption per token (Wh/token) - based on ACTIVE parameters
+    // This is because energy consumption during inference is primarily determined by compute, 
+    // which is proportional to active parameters in MoE models
+    const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
+    
+    // Calculate GPU memory requirements - based on TOTAL parameters
+    // Memory footprint is determined by the total model size, not just active parameters
+    const memoryRequired = 1.2 * totalParams * GPU_BITS / 8; // in bytes
+    const numGPUs = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
+    
+    // Calculate inference latency - based on ACTIVE parameters
+    // Latency is determined by compute, which is proportional to active parameters in MoE models
+    const latencyPerToken = LATENCY_ALPHA * activeParamsBillions + LATENCY_BETA;
+    const totalLatency = outputTokens * latencyPerToken;
+    
+    // Calculate GPU energy consumption (Wh) - using active parameters for computation
+    const gpuEnergy = outputTokens * energyPerToken * numGPUs;
+    
+    // Calculate server energy excluding GPUs (Wh)
+    // Converting kW to Wh by multiplying by hours (latency / 3600)
+    const serverEnergyWithoutGPU = totalLatency * SERVER_POWER_WITHOUT_GPU * numGPUs / INSTALLED_GPUS / 3600 * 1000;
+    
+    // Total server energy (Wh)
+    const serverEnergy = serverEnergyWithoutGPU + gpuEnergy;
+    
+    // Apply data center overhead (PUE)
+    const totalEnergy = PUE * serverEnergy;
+    
+    // Ensure minimum energy value for visibility in UI
+    const minEnergy = 0.01; // Minimum 0.01 Wh to ensure visibility
+    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
+    
+    // Calculate CO2 emissions (grams)
+    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
+    
+    return {
+      numGPUs,
+      totalEnergy: normalizedEnergy,
+      co2Emissions,
+      modelDetails: {
+        totalParams: totalParams / 1e9,
+        activeParams: activeParams / 1e9,
+        activationRatio: activeRatio,
+        method: 'community'
+      }
+    };
+  }
 }
 
 /**

@@ -35,6 +35,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up email form event listeners
     setupEmailForm();
     
+    // Set up estimation method toggle
+    setupEstimationMethodToggle();
+    
     // Add resize observer to adjust popup size based on content
     adjustPopupHeight();
     
@@ -613,5 +616,247 @@ function sendEmailToBackend(email, marketingConsent = false) {
     }
   }).catch(error => {
     console.error('Error sending email to backend:', error);
+  });
+}
+
+/**
+ * Sets up the estimation method toggle functionality
+ */
+function setupEstimationMethodToggle() {
+  const estimationSelect = document.getElementById('estimation-method');
+  const understandDifferenceLink = document.getElementById('understand-difference');
+  
+  // Load saved estimation method and ensure consistency
+  loadEstimationMethod().then(method => {
+    const selectedMethod = method || 'community';
+    estimationSelect.value = selectedMethod;
+    console.log('Popup loaded with estimation method:', selectedMethod);
+  });
+  
+  // Handle estimation method change
+  estimationSelect.addEventListener('change', function() {
+    const selectedMethod = this.value;
+    console.log('Estimation method changed to:', selectedMethod);
+    
+    // Save the method first
+    saveEstimationMethod(selectedMethod);
+    
+    // Recalculate existing logs with new method and wait for completion
+    recalculateLogsInPopup(selectedMethod, () => {
+      // After recalculation is complete, notify content scripts
+      notifyEstimationMethodChange(selectedMethod);
+    });
+  });
+  
+  // Handle "understand the difference" link
+  understandDifferenceLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    showEstimationMethodExplanation();
+  });
+}
+
+/**
+ * Loads the saved estimation method from storage
+ */
+function loadEstimationMethod() {
+  return new Promise((resolve) => {
+    const storage = getChromeStorage();
+    if (storage) {
+      storage.get(['estimationMethod'], function(result) {
+        const method = result.estimationMethod || 'community';
+        console.log('Loaded estimation method from storage:', method);
+        resolve(method);
+      });
+    } else {
+      console.log('No storage available, defaulting to community');
+      resolve('community');
+    }
+  });
+}
+
+/**
+ * Saves the estimation method to storage
+ */
+function saveEstimationMethod(method) {
+  const storage = getChromeStorage();
+  if (storage) {
+    storage.set({ estimationMethod: method }, function() {
+      console.log('Popup: Estimation method saved to storage:', method);
+    });
+  } else {
+    console.error('Popup: Cannot save estimation method - no storage available');
+  }
+}
+
+/**
+ * Recalculates all logs with the new estimation method in the popup
+ */
+function recalculateLogsInPopup(method, callback) {
+  const storage = getChromeStorage();
+  if (!storage) {
+    if (callback) callback();
+    return;
+  }
+  
+  storage.get(['chatgptLogs'], function(result) {
+    const logs = result.chatgptLogs || [];
+    
+    // Recalculate energy for all logs
+    logs.forEach(log => {
+      if (log.assistantTokenCount > 0) {
+        const energyData = calculateEnergyAndEmissionsInPopup(log.assistantTokenCount, method);
+        log.energyUsage = energyData.totalEnergy;
+        log.co2Emissions = energyData.co2Emissions;
+      }
+    });
+    
+    // Save updated logs back to storage
+    storage.set({ chatgptLogs: logs }, function() {
+      // Update the UI with recalculated data
+      updateTodayStats(logs);
+      updateLifetimeStats(logs);
+      console.log(`Recalculated ${logs.length} logs with ${method} method`);
+      
+      // Call the callback when everything is complete
+      if (callback) callback();
+    });
+  });
+}
+
+/**
+ * Energy calculation function for use in popup (matches content script logic)
+ */
+function calculateEnergyAndEmissionsInPopup(outputTokens, method = 'community') {
+  const ENERGY_ALPHA = 8.91e-5;
+  const ENERGY_BETA = 1.43e-3;
+  const PUE = 1.2;
+  const WORLD_EMISSION_FACTOR = 0.418;
+  
+  if (method === 'altman') {
+    // Sam Altman's estimation: 0.34 Wh per query with 781 average output tokens
+    const altmanEnergyPerToken = 0.34 / 781;
+    const totalEnergy = outputTokens * altmanEnergyPerToken;
+    
+    // Ensure minimum energy value for visibility in UI
+    const minEnergy = 0.01;
+    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
+    
+    // Calculate CO2 emissions (grams)
+    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
+    
+    return {
+      totalEnergy: normalizedEnergy,
+      co2Emissions
+    };
+  } else {
+    // Community estimates using EcoLogits methodology
+    const activeParamsBillions = 55; // 55B active parameters
+    const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
+    
+    // Simplified calculation for popup (just the core energy per token)
+    const totalEnergy = outputTokens * energyPerToken * PUE;
+    
+    // Ensure minimum energy value for visibility in UI
+    const minEnergy = 0.01;
+    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
+    
+    // Calculate CO2 emissions (grams)
+    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
+    
+    return {
+      totalEnergy: normalizedEnergy,
+      co2Emissions
+    };
+  }
+}
+
+/**
+ * Notifies content script about estimation method change
+ */
+function notifyEstimationMethodChange(method) {
+  // Send message to all ChatGPT tabs to update their method for new calculations
+  if (chrome.tabs) {
+    chrome.tabs.query({ url: "https://chatgpt.com/*" }, function(tabs) {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {
+          type: 'estimationMethodChanged',
+          method: method
+        }, function(response) {
+          // Fire and forget - just updating the method for future calculations
+        });
+      });
+    });
+  }
+}
+
+/**
+ * Shows explanation of the different estimation methods
+ */
+function showEstimationMethodExplanation() {
+  // Create modal overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', sans-serif;
+  `;
+  
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    background: white;
+    padding: 24px;
+    border-radius: 8px;
+    max-width: 500px;
+    margin: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  `;
+  
+  modal.innerHTML = `
+    <h3 style="margin: 0 0 16px 0; color: #3E7B67; font-size: 18px;">Estimation Methods</h3>
+    
+    <div style="margin-bottom: 16px;">
+      <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px; font-weight: 600;">Community Estimates</h4>
+      <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 1.4; color: #666;">
+        Based on academic research (EcoLogits methodology) that models ChatGPT as a 440B parameter 
+        Mixture of Experts model. Calculates ~0.09 Wh per token based on computational requirements.
+      </p>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px; font-weight: 600;">Sam Altman's Estimation</h4>
+      <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 1.4; color: #666;">
+        Based on OpenAI CEO's blog post stating 0.34 Wh per query. We scale this by tokens 
+        (0.34 Wh ÷ 781 avg tokens = ~0.0004 Wh per token), resulting in much lower estimates.
+      </p>
+    </div>
+    
+    <button onclick="this.closest('div').remove()" style="
+      background: #3E7B67;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    ">Close</button>
+  `;
+  
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  
+  // Close on overlay click
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.remove();
+    }
   });
 }

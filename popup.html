@@ -104,6 +104,46 @@
       color: var(--primary-color);
     }
     
+    .estimation-toggle {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    
+    .estimation-select {
+      font-size: 12px;
+      padding: 4px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: white;
+      color: var(--text-color);
+      font-family: inherit;
+      cursor: pointer;
+      min-width: 140px;
+    }
+    
+    .estimation-select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    
+    .methodology-links {
+      display: flex;
+      gap: 8px;
+      font-size: 10px;
+    }
+    
+    .method-link, .methodology-link {
+      color: var(--primary-color);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    
+    .method-link:hover, .methodology-link:hover {
+      text-decoration: underline;
+    }
+    
     .tab-container {
       display: flex;
       background-color: var(--background-color);
@@ -474,7 +514,16 @@
       <div class="icon"><i class="ri-leaf-line"></i></div>
       <div>AI impact tracker</div>
     </div>
-    <a href="https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md" target="_blank" class="info-icon" title="View methodology"><i class="ri-information-line"></i></a>
+    <div class="estimation-toggle">
+      <select id="estimation-method" class="estimation-select">
+        <option value="community">Community estimates</option>
+        <option value="altman">Sam Altman's estimation</option>
+      </select>
+      <div class="methodology-links">
+        <a href="#" id="understand-difference" class="method-link">understand the difference</a>
+        <a href="https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md" target="_blank" class="methodology-link">methodology</a>
+      </div>
+    </div>
   </div>
   
   <div class="tab-container">
