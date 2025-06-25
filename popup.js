@@ -624,7 +624,6 @@ function sendEmailToBackend(email, marketingConsent = false) {
  */
 function setupEstimationMethodToggle() {
   const estimationSelect = document.getElementById('estimation-method');
-  const understandDifferenceLink = document.getElementById('understand-difference');
   
   // Load saved estimation method and ensure consistency
   loadEstimationMethod().then(method => {
@@ -646,12 +645,6 @@ function setupEstimationMethodToggle() {
       // After recalculation is complete, notify content scripts
       notifyEstimationMethodChange(selectedMethod);
     });
-  });
-  
-  // Handle "understand the difference" link
-  understandDifferenceLink.addEventListener('click', function(e) {
-    e.preventDefault();
-    showEstimationMethodExplanation();
   });
 }
 
@@ -789,74 +782,3 @@ function notifyEstimationMethodChange(method) {
   }
 }
 
-/**
- * Shows explanation of the different estimation methods
- */
-function showEstimationMethodExplanation() {
-  // Create modal overlay
-  const overlay = document.createElement('div');
-  overlay.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Inter', sans-serif;
-  `;
-  
-  const modal = document.createElement('div');
-  modal.style.cssText = `
-    background: white;
-    padding: 24px;
-    border-radius: 8px;
-    max-width: 500px;
-    margin: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  `;
-  
-  modal.innerHTML = `
-    <h3 style="margin: 0 0 16px 0; color: #3E7B67; font-size: 18px;">Estimation Methods</h3>
-    
-    <div style="margin-bottom: 16px;">
-      <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px; font-weight: 600;">Community Estimates</h4>
-      <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 1.4; color: #666;">
-        Based on academic research (EcoLogits methodology) that models ChatGPT as a 440B parameter 
-        Mixture of Experts model. Calculates ~0.09 Wh per token based on computational requirements.
-      </p>
-    </div>
-    
-    <div style="margin-bottom: 20px;">
-      <h4 style="margin: 0 0 8px 0; color: #333; font-size: 14px; font-weight: 600;">Sam Altman's Estimation</h4>
-      <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 1.4; color: #666;">
-        Based on OpenAI CEO's blog post stating 0.34 Wh per query. We scale this by tokens 
-        (0.34 Wh ÷ 781 avg tokens = ~0.0004 Wh per token), resulting in much lower estimates.
-      </p>
-    </div>
-    
-    <button onclick="this.closest('div').remove()" style="
-      background: #3E7B67;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-    ">Close</button>
-  `;
-  
-  overlay.appendChild(modal);
-  document.body.appendChild(overlay);
-  
-  // Close on overlay click
-  overlay.addEventListener('click', function(e) {
-    if (e.target === overlay) {
-      overlay.remove();
-    }
-  });
-}
