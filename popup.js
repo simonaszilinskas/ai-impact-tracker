@@ -3,6 +3,9 @@
  * =======================================
  * This script handles the popup UI functionality including loading,
  * displaying usage logs and environmental metrics.
+ *
+ * Note: energy-calculator.js is loaded before this file via popup.html
+ * The calculateEnergyAndEmissions() function is available from window.calculateEnergyAndEmissions
  */
 
 /**
@@ -697,7 +700,7 @@ function recalculateLogsInPopup(method, callback) {
     // Recalculate energy for all logs
     logs.forEach(log => {
       if (log.assistantTokenCount > 0) {
-        const energyData = calculateEnergyAndEmissionsInPopup(log.assistantTokenCount, method);
+        const energyData = calculateEnergyAndEmissions(log.assistantTokenCount, method);
         log.energyUsage = energyData.totalEnergy;
         log.co2Emissions = energyData.co2Emissions;
       }
@@ -717,51 +720,18 @@ function recalculateLogsInPopup(method, callback) {
 }
 
 /**
- * Energy calculation function for use in popup (matches content script logic)
+ * Energy calculation function is now imported from energy-calculator.js
+ *
+ * ✅ RESOLVED: Issue #14 - Code duplication has been eliminated
+ * The energy calculation logic now lives in energy-calculator.js (shared module)
+ * and is imported by both content.js and popup.js.
+ *
+ * This implements the EcoLogits methodology from:
+ * https://ecologits.ai/0.2/methodology/llm_inference/
+ *
+ * See: energy-calculator.js for the complete implementation
  */
-function calculateEnergyAndEmissionsInPopup(outputTokens, method = 'community') {
-  const ENERGY_ALPHA = 8.91e-5;
-  const ENERGY_BETA = 1.43e-3;
-  const PUE = 1.2;
-  const WORLD_EMISSION_FACTOR = 0.418;
-  
-  if (method === 'altman') {
-    // Sam Altman's estimation: 0.34 Wh per query with 781 average output tokens
-    const altmanEnergyPerToken = 0.34 / 781;
-    const totalEnergy = outputTokens * altmanEnergyPerToken;
-    
-    // Ensure minimum energy value for visibility in UI
-    const minEnergy = 0.01;
-    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
-    
-    // Calculate CO2 emissions (grams)
-    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
-    
-    return {
-      totalEnergy: normalizedEnergy,
-      co2Emissions
-    };
-  } else {
-    // Community estimates using EcoLogits methodology
-    const activeParamsBillions = 55; // 55B active parameters
-    const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
-    
-    // Simplified calculation for popup (just the core energy per token)
-    const totalEnergy = outputTokens * energyPerToken * PUE;
-    
-    // Ensure minimum energy value for visibility in UI
-    const minEnergy = 0.01;
-    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
-    
-    // Calculate CO2 emissions (grams)
-    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
-    
-    return {
-      totalEnergy: normalizedEnergy,
-      co2Emissions
-    };
-  }
-}
+// calculateEnergyAndEmissions is imported from energy-calculator.js at the top of this file
 
 /**
  * Notifies content script about estimation method change

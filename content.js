@@ -4,6 +4,9 @@
  * This script captures conversation data from the ChatGPT web interface,
  * extracts message content, calculates token usage, energy consumption,
  * and CO2 emissions. It persists data to Chrome storage for the popup UI.
+ *
+ * Note: energy-calculator.js is loaded before this file via manifest.json
+ * The calculateEnergyAndEmissions() function is available in global scope.
  */
 
 // In-memory storage for conversation logs
@@ -11,19 +14,6 @@ const logs = [];
 let conversationId = null;
 let isExtensionContextValid = true; // Track if extension context is still valid
 let intervalIds = []; // Track all intervals to clear them if context is invalidated
-
-// Constants for EcoLogits methodology
-// These constants are derived from academic research on LLM energy consumption
-const ENERGY_ALPHA = 8.91e-5;  // Energy coefficient for model parameters (Wh/token/B-params)
-const ENERGY_BETA = 1.43e-3;   // Base energy per token (Wh/token)
-const LATENCY_ALPHA = 8.02e-4; // Latency coefficient for model parameters (s/token/B-params)
-const LATENCY_BETA = 2.23e-2;  // Base latency per token (s/token)
-const PUE = 1.2;               // Power Usage Effectiveness for modern data centers
-const GPU_MEMORY = 80;         // A100 GPU memory in GB
-const SERVER_POWER_WITHOUT_GPU = 1; // Server power excluding GPUs (kW)
-const INSTALLED_GPUS = 8;      // Typical GPUs per server in OpenAI's infrastructure
-const GPU_BITS = 4;            // Quantization level in bits (4-bit = 4x memory compression)
-const WORLD_EMISSION_FACTOR = 0.418; // Global average emission factor (kgCO2eq/kWh)
 
 /**
  * Checks if the extension context is still valid
@@ -456,7 +446,6 @@ function createUsageNotification() {
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      touch-action: none; /* Prevent scrolling when dragging on mobile */
       background-color: white;
       color: #333;
       padding: 4px 12px;
@@ -468,19 +457,23 @@ function createUsageNotification() {
       align-items: center;
       justify-content: center;
       z-index: 10000;
-      transition: all 0.3s ease;
-      cursor: move;
+      transition: box-shadow 0.2s ease;
+      cursor: pointer;
       line-height: 1.2;
       text-align: center;
       width: auto;
       min-width: auto;
       max-width: auto;
       height: auto;
-      user-select: none; /* Prevent text selection when dragging */
+      user-select: none;
     }
-    
+
     .ai-impact-notification:hover {
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .ai-impact-notification:active {
+      transform: translateX(-50%) scale(0.98);
     }
     
     .ai-impact-content {
@@ -539,102 +532,9 @@ function createUsageNotification() {
       <div id="ai-impact-message" class="ai-impact-message">${message}</div>
     </div>
   `;
-  
-  // Make the notification draggable
-  let isDragging = false;
-  let offsetX, offsetY;
-  
-  // Mouse events for dragging
-  notification.addEventListener('mousedown', startDrag);
-  document.addEventListener('mousemove', moveDrag);
-  document.addEventListener('mouseup', endDrag);
-  
-  // Touch events for mobile dragging
-  notification.addEventListener('touchstart', (e) => {
-    const touch = e.touches[0];
-    e.clientX = touch.clientX;
-    e.clientY = touch.clientY;
-    startDrag(e);
-  });
-  
-  document.addEventListener('touchmove', (e) => {
-    if (!isDragging) return;
-    const touch = e.touches[0];
-    e.clientX = touch.clientX;
-    e.clientY = touch.clientY;
-    moveDrag(e);
-  });
-  
-  document.addEventListener('touchend', endDrag);
-  
-  // Start dragging
-  function startDrag(e) {
-    isDragging = true;
-    
-    // Calculate the offset of the cursor/touch from the notification's top-left corner
-    const rect = notification.getBoundingClientRect();
-    offsetX = e.clientX - rect.left;
-    offsetY = e.clientY - rect.top;
-    
-    // Change cursor to grabbing during drag
-    notification.style.cursor = 'grabbing';
-    
-    // Prevent default behaviors
-    e.preventDefault();
-  }
-  
-  // Handle drag movement
-  function moveDrag(e) {
-    if (!isDragging) return;
-    
-    // Calculate new position
-    const x = e.clientX - offsetX;
-    const y = e.clientY - offsetY;
-    
-    // Keep notification within viewport bounds
-    const notifWidth = notification.offsetWidth;
-    const notifHeight = notification.offsetHeight;
-    const windowWidth = window.innerWidth;
-    const windowHeight = window.innerHeight;
-    
-    // Constrain horizontal position
-    const boundedX = Math.max(0, Math.min(x, windowWidth - notifWidth));
-    
-    // Constrain vertical position
-    const boundedY = Math.max(0, Math.min(y, windowHeight - notifHeight));
-    
-    // Update position styles - remove the transform property
-    notification.style.left = boundedX + 'px';
-    notification.style.top = boundedY + 'px';
-    notification.style.transform = 'none';
-    
-    // Prevent default to avoid page scrolling during drag
-    e.preventDefault();
-  }
-  
-  // End dragging
-  function endDrag() {
-    if (isDragging) {
-      isDragging = false;
-      // Change cursor back to move
-      notification.style.cursor = 'move';
-      
-      // Save position to localStorage for persistence
-      try {
-        const rect = notification.getBoundingClientRect();
-        const position = {
-          x: rect.left,
-          y: rect.top
-        };
-        localStorage.setItem('aiImpactNotificationPosition', JSON.stringify(position));
-      } catch (e) {
-        console.error("Error saving notification position:", e);
-      }
-    }
-  }
-  
-  // Add event listener to open extension popup (now on double click to avoid conflicts with dragging)
-  notification.addEventListener('dblclick', () => {
+
+  // Add click event listener to open extension popup
+  notification.addEventListener('click', () => {
     // Try to open the extension popup programmatically
     try {
       chrome.runtime.sendMessage({ action: "openPopup" });
@@ -660,38 +560,43 @@ function createUsageNotification() {
     console.error("Error appending styles:", e);
   }
   
-  // Find the right position in ChatGPT's UI to insert the notification
+  // Insert notification directly to body for stability
+  // Using body ensures it persists across ChatGPT's page navigation
   try {
-    const mainHeader = document.querySelector('header');
-    if (mainHeader && mainHeader.parentNode) {
-      // Try to insert after the header for better integration
-      mainHeader.parentNode.insertBefore(notification, mainHeader.nextSibling);
-    } else if (document.body) {
-      // Fallback to body if header not found
+    if (document.body) {
       document.body.appendChild(notification);
     } else {
-      console.warn("Neither header nor body available for notification insertion");
+      console.warn("Document body not available for notification insertion");
     }
   } catch (e) {
     console.error("Error inserting notification:", e);
   }
-  
-  // Remember position if dragged, using localStorage to persist across page refreshes
-  try {
-    // Check if we have saved position in localStorage
-    const savedPosition = localStorage.getItem('aiImpactNotificationPosition');
-    if (savedPosition) {
-      const position = JSON.parse(savedPosition);
-      notification.style.left = position.x + 'px';
-      notification.style.top = position.y + 'px';
-      notification.style.transform = 'none'; // Remove the default centering
+
+  // Set up MutationObserver to detect if notification gets removed
+  // This handles cases where ChatGPT's navigation removes DOM elements
+  const notificationObserver = new MutationObserver((mutations) => {
+    // Check if our notification still exists
+    if (!document.getElementById('ai-impact-notification')) {
+      console.log('Notification was removed, recreating...');
+      // Wait a moment for DOM to stabilize, then recreate
+      setTimeout(() => {
+        if (!document.getElementById('ai-impact-notification')) {
+          createUsageNotification();
+        }
+      }, 100);
     }
-  } catch (e) {
-    console.error("Error restoring notification position:", e);
+  });
+
+  // Observe body for child removals
+  if (document.body) {
+    notificationObserver.observe(document.body, {
+      childList: true,
+      subtree: false
+    });
   }
-  
+
   console.log("AI Impact notification added to page");
-  
+
   // Initial update
   updateUsageNotification();
 }
@@ -909,93 +814,22 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
 
 /**
  * Calculates energy usage and CO2 emissions based on selected methodology
- * 
+ *
+ * NOTE: This function is now imported from energy-calculator.js (shared module)
+ * The implementation is in energy-calculator.js to eliminate code duplication
+ * See: energy-calculator.js for the complete implementation
+ *
  * This implements either:
- * 1. EcoLogits methodology (community estimates) from https://arxiv.org/abs/2309.12456
+ * 1. EcoLogits methodology (community estimates) from https://ecologits.ai/0.2/methodology/llm_inference/
  * 2. Sam Altman's estimation (0.34 Wh per query, scaled by tokens)
- * 
+ *
  * @param {number} outputTokens - Number of tokens in the assistant's response
  * @param {string} method - 'community' or 'altman'
  * @returns {Object} Energy usage and emissions data
+ *
+ * The function is imported at the top of this file and used directly.
  */
-function calculateEnergyAndEmissions(outputTokens, method = 'community') {
-  if (method === 'altman') {
-    // Sam Altman's estimation: 0.34 Wh per query with 781 average output tokens
-    const altmanEnergyPerToken = 0.34 / 781; // ~0.000435 Wh per token
-    const totalEnergy = outputTokens * altmanEnergyPerToken;
-    
-    // Ensure minimum energy value for visibility in UI
-    const minEnergy = 0.01;
-    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
-    
-    // Calculate CO2 emissions (grams)
-    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
-    
-    return {
-      numGPUs: 1, // Simplified for Altman estimate
-      totalEnergy: normalizedEnergy,
-      co2Emissions,
-      modelDetails: {
-        method: 'altman',
-        energyPerToken: altmanEnergyPerToken
-      }
-    };
-  } else {
-    // Community estimates using EcoLogits methodology
-    // ChatGPT is a Mixture of Experts (MoE) model with 440B total parameters
-    const totalParams = 440e9;
-    const activeRatio = 0.125; // 12.5% activation ratio for MoE models
-    const activeParams = 55e9; // 55B active parameters
-    const activeParamsBillions = activeParams / 1e9; // Convert to billions for calculations
-    
-    // Energy consumption per token (Wh/token) - based on ACTIVE parameters
-    // This is because energy consumption during inference is primarily determined by compute, 
-    // which is proportional to active parameters in MoE models
-    const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
-    
-    // Calculate GPU memory requirements - based on TOTAL parameters
-    // Memory footprint is determined by the total model size, not just active parameters
-    const memoryRequired = 1.2 * totalParams * GPU_BITS / 8; // in bytes
-    const numGPUs = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
-    
-    // Calculate inference latency - based on ACTIVE parameters
-    // Latency is determined by compute, which is proportional to active parameters in MoE models
-    const latencyPerToken = LATENCY_ALPHA * activeParamsBillions + LATENCY_BETA;
-    const totalLatency = outputTokens * latencyPerToken;
-    
-    // Calculate GPU energy consumption (Wh) - using active parameters for computation
-    const gpuEnergy = outputTokens * energyPerToken * numGPUs;
-    
-    // Calculate server energy excluding GPUs (Wh)
-    // Converting kW to Wh by multiplying by hours (latency / 3600)
-    const serverEnergyWithoutGPU = totalLatency * SERVER_POWER_WITHOUT_GPU * numGPUs / INSTALLED_GPUS / 3600 * 1000;
-    
-    // Total server energy (Wh)
-    const serverEnergy = serverEnergyWithoutGPU + gpuEnergy;
-    
-    // Apply data center overhead (PUE)
-    const totalEnergy = PUE * serverEnergy;
-    
-    // Ensure minimum energy value for visibility in UI
-    const minEnergy = 0.01; // Minimum 0.01 Wh to ensure visibility
-    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
-    
-    // Calculate CO2 emissions (grams)
-    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
-    
-    return {
-      numGPUs,
-      totalEnergy: normalizedEnergy,
-      co2Emissions,
-      modelDetails: {
-        totalParams: totalParams / 1e9,
-        activeParams: activeParams / 1e9,
-        activationRatio: activeRatio,
-        method: 'community'
-      }
-    };
-  }
-}
+// calculateEnergyAndEmissions is now imported from energy-calculator.js
 
 /**
  * Validates and repairs storage if needed
