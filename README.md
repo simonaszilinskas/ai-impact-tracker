@@ -17,8 +17,20 @@ A browser extension (for now only Chrome) that estimates the environmental impac
 <img src="https://github.com/user-attachments/assets/370b8f74-5eba-46f5-a22d-549ad0dd26a7" width="600px" style="border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
 </div>
 
+## Features
+
+- **Real-time Energy Tracking**: Monitors your ChatGPT conversations and calculates energy consumption
+- **Dual Estimation Methods**: Choose between community estimates (research-based) or Sam Altman's estimation
+- **Relatable Equivalents**: Understand your impact through everyday comparisons:
+  - 📺 YouTube streaming time
+  - 💡 60W light bulb runtime
+  - 📱 Phone charges
+  - 🛗 Elevator travel
+- **Daily & Lifetime Stats**: Track both your daily usage and cumulative impact
+- **Privacy-Focused**: No data collection, all tracking happens locally
+
 ## How it works
-This extension tracks messages the user sends to ChatGPT, tries to catch the number of output tokens by the models based on the character size of it's response, then it calculates the energy footprint. More on the methdology: https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md
+This extension tracks messages the user sends to ChatGPT, tries to catch the number of output tokens by the models based on the character size of it's response, then it calculates the energy footprint. More on the methodology: https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md
 
 ## Current status
 - Works exclusively with ChatGPT for now, with plans to support more AI platforms
