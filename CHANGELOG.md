@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Active parameters: 55B → 60B (average, range: 30-90B)
   - Activation ratio: 12.5% → 20%
   - GPU requirements: 4 GPUs → 3 GPUs
-  - Energy per 100 tokens: ~4.15 Wh → ~2.44 Wh (community method)
+  - Energy per 100 tokens: ~4.15 Wh → ~3.32 Wh (community method)
 
 ### Updated
 - Updated energy-calculator.js with GPT-5 parameters

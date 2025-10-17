@@ -94,9 +94,9 @@ function calculateEnergyOldBuggy(outputTokens, method = 'community') {
 
 // Test cases
 const testCases = [
-  { tokens: 10, method: 'community', expectedMin: 0.24, expectedMax: 0.25 },
-  { tokens: 100, method: 'community', expectedMin: 2.43, expectedMax: 2.45 },
-  { tokens: 1000, method: 'community', expectedMin: 24.39, expectedMax: 24.40 },
+  { tokens: 10, method: 'community', expectedMin: 0.33, expectedMax: 0.34 },
+  { tokens: 100, method: 'community', expectedMin: 3.31, expectedMax: 3.33 },
+  { tokens: 1000, method: 'community', expectedMin: 33.19, expectedMax: 33.21 },
   { tokens: 100, method: 'altman', expectedMin: 0.04, expectedMax: 0.05 }
 ];
 
@@ -185,6 +185,6 @@ console.log('1. Load the extension in Chrome');
 console.log('2. Use ChatGPT and generate some responses');
 console.log('3. Open the extension popup');
 console.log('4. Switch between "Community" and "Altman" estimation methods');
-console.log('5. Verify the energy values are reasonable (~2.4 Wh per 100 tokens for Community)');
+console.log('5. Verify the energy values are reasonable (~3.3 Wh per 100 tokens for Community)');
 console.log('6. Check browser console for any errors');
 console.log();

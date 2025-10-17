@@ -47,10 +47,10 @@ console.log(`  100 tokens: ${result100Community.totalEnergy.toFixed(4)} Wh`);
 console.log(`  CO2 emissions: ${result100Community.co2Emissions.toFixed(4)} g`);
 console.log(`  NumGPUs: ${result100Community.numGPUs}`);
 
-if (result100Community.totalEnergy >= 2.43 && result100Community.totalEnergy <= 2.45) {
-  console.log('  ✅ PASS - Calculation matches expected (2.44 Wh)');
+if (result100Community.totalEnergy >= 3.31 && result100Community.totalEnergy <= 3.33) {
+  console.log('  ✅ PASS - Calculation matches expected (3.32 Wh)');
 } else {
-  console.log(`  ❌ FAIL - Expected ~2.44 Wh, got ${result100Community.totalEnergy.toFixed(4)} Wh`);
+  console.log(`  ❌ FAIL - Expected ~3.32 Wh, got ${result100Community.totalEnergy.toFixed(4)} Wh`);
   process.exit(1);
 }
 console.log();
@@ -87,10 +87,10 @@ console.log();
 // Test 5: Compare multiple token counts
 console.log('Test 5: Testing various token counts...');
 const testCases = [
-  { tokens: 10, expectedMin: 0.24, expectedMax: 0.25 },
-  { tokens: 100, expectedMin: 2.43, expectedMax: 2.45 },
-  { tokens: 1000, expectedMin: 24.39, expectedMax: 24.40 },
-  { tokens: 5000, expectedMin: 121.9, expectedMax: 122.0 }
+  { tokens: 10, expectedMin: 0.33, expectedMax: 0.34 },
+  { tokens: 100, expectedMin: 3.31, expectedMax: 3.33 },
+  { tokens: 1000, expectedMin: 33.19, expectedMax: 33.21 },
+  { tokens: 5000, expectedMin: 165.9, expectedMax: 166.1 }
 ];
 
 let allPassed = true;
@@ -127,5 +127,5 @@ console.log('  1. Load the extension in Chrome (chrome://extensions)');
 console.log('  2. Test content.js: Visit ChatGPT and check console for errors');
 console.log('  3. Test popup.js: Open extension popup and verify it displays correctly');
 console.log('  4. Test method switching: Switch between Community and Altman methods');
-console.log('  5. Verify energy values are correct (~2.4 Wh per 100 tokens for Community)');
+console.log('  5. Verify energy values are correct (~3.3 Wh per 100 tokens for Community)');
 console.log();
