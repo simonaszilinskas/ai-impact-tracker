@@ -12,7 +12,7 @@ console.log();
 // Import the shared module
 import {
   ECOLOGITS_CONSTANTS,
-  GPT4O_PARAMS,
+  GPT5_PARAMS,
   ALTMAN_PARAMS,
   calculateEnergyAndEmissions,
   getEnergyPerToken,
@@ -26,13 +26,13 @@ console.log();
 console.log('Test 1: Checking constants...');
 console.log(`  ENERGY_ALPHA: ${ECOLOGITS_CONSTANTS.ENERGY_ALPHA}`);
 console.log(`  ENERGY_BETA: ${ECOLOGITS_CONSTANTS.ENERGY_BETA}`);
-console.log(`  GPT4O Total Params: ${GPT4O_PARAMS.TOTAL_PARAMS / 1e9}B`);
-console.log(`  GPT4O Active Params: ${GPT4O_PARAMS.ACTIVE_PARAMS / 1e9}B`);
+console.log(`  GPT-5 Total Params: ${GPT5_PARAMS.TOTAL_PARAMS / 1e9}B`);
+console.log(`  GPT-5 Active Params: ${GPT5_PARAMS.ACTIVE_PARAMS / 1e9}B`);
 console.log(`  Altman Energy/Query: ${ALTMAN_PARAMS.ENERGY_PER_QUERY} Wh`);
 
 if (ECOLOGITS_CONSTANTS.ENERGY_ALPHA === 8.91e-5 &&
     ECOLOGITS_CONSTANTS.ENERGY_BETA === 1.43e-3 &&
-    GPT4O_PARAMS.TOTAL_PARAMS === 440e9) {
+    GPT5_PARAMS.TOTAL_PARAMS === 300e9) {
   console.log('  ✅ PASS - All constants correct');
 } else {
   console.log('  ❌ FAIL - Constants mismatch');
@@ -47,10 +47,10 @@ console.log(`  100 tokens: ${result100Community.totalEnergy.toFixed(4)} Wh`);
 console.log(`  CO2 emissions: ${result100Community.co2Emissions.toFixed(4)} g`);
 console.log(`  NumGPUs: ${result100Community.numGPUs}`);
 
-if (result100Community.totalEnergy >= 4.14 && result100Community.totalEnergy <= 4.15) {
-  console.log('  ✅ PASS - Calculation matches expected (4.145 Wh)');
+if (result100Community.totalEnergy >= 2.43 && result100Community.totalEnergy <= 2.45) {
+  console.log('  ✅ PASS - Calculation matches expected (2.44 Wh)');
 } else {
-  console.log(`  ❌ FAIL - Expected ~4.145 Wh, got ${result100Community.totalEnergy.toFixed(4)} Wh`);
+  console.log(`  ❌ FAIL - Expected ~2.44 Wh, got ${result100Community.totalEnergy.toFixed(4)} Wh`);
   process.exit(1);
 }
 console.log();
@@ -76,7 +76,7 @@ const numGPUs = getNumGPUs();
 console.log(`  getEnergyPerToken('community'): ${energyPerToken.toFixed(6)} Wh/token`);
 console.log(`  getNumGPUs(): ${numGPUs} GPUs`);
 
-if (energyPerToken > 0 && numGPUs === 4) {
+if (energyPerToken > 0 && numGPUs === 3) {
   console.log('  ✅ PASS - Helper functions work correctly');
 } else {
   console.log('  ❌ FAIL - Helper functions returned unexpected values');
@@ -87,10 +87,10 @@ console.log();
 // Test 5: Compare multiple token counts
 console.log('Test 5: Testing various token counts...');
 const testCases = [
-  { tokens: 10, expectedMin: 0.4, expectedMax: 0.5 },
-  { tokens: 100, expectedMin: 4.1, expectedMax: 4.2 },
-  { tokens: 1000, expectedMin: 41.4, expectedMax: 41.5 },
-  { tokens: 5000, expectedMin: 207, expectedMax: 208 }
+  { tokens: 10, expectedMin: 0.24, expectedMax: 0.25 },
+  { tokens: 100, expectedMin: 2.43, expectedMax: 2.45 },
+  { tokens: 1000, expectedMin: 24.39, expectedMax: 24.40 },
+  { tokens: 5000, expectedMin: 121.9, expectedMax: 122.0 }
 ];
 
 let allPassed = true;
@@ -127,5 +127,5 @@ console.log('  1. Load the extension in Chrome (chrome://extensions)');
 console.log('  2. Test content.js: Visit ChatGPT and check console for errors');
 console.log('  3. Test popup.js: Open extension popup and verify it displays correctly');
 console.log('  4. Test method switching: Switch between Community and Altman methods');
-console.log('  5. Verify energy values are correct (~4 Wh per 100 tokens for Community)');
+console.log('  5. Verify energy values are correct (~2.4 Wh per 100 tokens for Community)');
 console.log();

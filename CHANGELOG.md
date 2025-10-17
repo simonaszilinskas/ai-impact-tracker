@@ -5,6 +5,23 @@ All notable changes to the AI Impact Tracker extension will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2] - 2025-10-17
+
+### Changed
+- **Updated model to GPT-5 specifications**
+  - Total parameters: 440B → 300B
+  - Active parameters: 55B → 60B (average, range: 30-90B)
+  - Activation ratio: 12.5% → 20%
+  - GPU requirements: 4 GPUs → 3 GPUs
+  - Energy per 100 tokens: ~4.15 Wh → ~2.44 Wh (community method)
+
+### Updated
+- Updated energy-calculator.js with GPT-5 parameters
+- Updated all test files with new expected values
+- Updated methodology.md with GPT-5 specifications
+- Updated popup.html tooltips to reflect new model
+- Updated TESTING.md with new energy benchmarks
+
 ## [2.1] - 2025-10-17
 
 ### Changed

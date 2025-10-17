@@ -47,14 +47,16 @@ const ECOLOGITS_CONSTANTS = {
 };
 
 /**
- * GPT-4o model parameters
- * Based on public information and reasonable estimates
+ * GPT-5 model parameters
+ * Based on the latest model configuration
  */
-const GPT4O_PARAMS = {
-  TOTAL_PARAMS: 440e9,        // 440 billion total parameters
-  ACTIVE_PARAMS: 55e9,        // 55 billion active parameters
-  ACTIVE_PARAMS_BILLIONS: 55, // Active params in billions (for formula)
-  ACTIVATION_RATIO: 0.125     // 12.5% activation ratio (Mixture of Experts)
+const GPT5_PARAMS = {
+  TOTAL_PARAMS: 300e9,        // 300 billion total parameters
+  ACTIVE_PARAMS: 60e9,        // 60 billion active parameters (average of 30-90B range)
+  ACTIVE_PARAMS_BILLIONS: 60, // Active params in billions (for formula)
+  ACTIVATION_RATIO: 0.2,      // 20% activation ratio (average: 60B/300B)
+  ACTIVE_PARAMS_MIN: 30e9,    // Minimum active parameters (30 billion)
+  ACTIVE_PARAMS_MAX: 90e9     // Maximum active parameters (90 billion)
 };
 
 /**
@@ -128,8 +130,8 @@ function calculateEnergyAndEmissions(outputTokens, method = 'community') {
     };
   } else {
     // Community estimates using EcoLogits methodology
-    // ChatGPT is a Mixture of Experts (MoE) model with 440B total parameters
-    const { TOTAL_PARAMS, ACTIVE_PARAMS, ACTIVE_PARAMS_BILLIONS, ACTIVATION_RATIO } = GPT4O_PARAMS;
+    // GPT-5 is a Mixture of Experts (MoE) model with 300B total parameters
+    const { TOTAL_PARAMS, ACTIVE_PARAMS, ACTIVE_PARAMS_BILLIONS, ACTIVATION_RATIO } = GPT5_PARAMS;
 
     // Step 1: Calculate energy per token (per GPU)
     // Uses ACTIVE parameters because energy is proportional to compute in MoE models
@@ -140,7 +142,7 @@ function calculateEnergyAndEmissions(outputTokens, method = 'community') {
     // Uses TOTAL parameters because memory stores the entire model
     // Formula: M_model = 1.2 × P_total × Q / 8 (Q=quantization bits)
     const memoryRequired = 1.2 * TOTAL_PARAMS * GPU_BITS / 8; // in bytes
-    const numGPUs = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9)); // = 4 GPUs for GPT-4o
+    const numGPUs = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9)); // = 3 GPUs for GPT-5
 
     // Step 3: Calculate inference latency
     // Uses ACTIVE parameters because latency depends on compute
@@ -199,19 +201,19 @@ function getEnergyPerToken(method = 'community') {
     return ALTMAN_PARAMS.ENERGY_PER_QUERY / ALTMAN_PARAMS.AVG_TOKENS_PER_QUERY;
   } else {
     const { ENERGY_ALPHA, ENERGY_BETA } = ECOLOGITS_CONSTANTS;
-    const { ACTIVE_PARAMS_BILLIONS } = GPT4O_PARAMS;
+    const { ACTIVE_PARAMS_BILLIONS } = GPT5_PARAMS;
     return ENERGY_ALPHA * ACTIVE_PARAMS_BILLIONS + ENERGY_BETA;
   }
 }
 
 /**
- * Helper function to get the number of GPUs required for GPT-4o
+ * Helper function to get the number of GPUs required for GPT-5
  *
  * @returns {number} Number of GPUs required
  */
 function getNumGPUs() {
   const { GPU_MEMORY, GPU_BITS } = ECOLOGITS_CONSTANTS;
-  const { TOTAL_PARAMS } = GPT4O_PARAMS;
+  const { TOTAL_PARAMS } = GPT5_PARAMS;
   const memoryRequired = 1.2 * TOTAL_PARAMS * GPU_BITS / 8;
   return Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
 }
@@ -221,7 +223,7 @@ function getNumGPUs() {
 if (typeof window !== 'undefined') {
   // Browser context - make available globally
   window.ECOLOGITS_CONSTANTS = ECOLOGITS_CONSTANTS;
-  window.GPT4O_PARAMS = GPT4O_PARAMS;
+  window.GPT5_PARAMS = GPT5_PARAMS;
   window.ALTMAN_PARAMS = ALTMAN_PARAMS;
   window.calculateEnergyAndEmissions = calculateEnergyAndEmissions;
   window.getEnergyPerToken = getEnergyPerToken;
@@ -232,7 +234,7 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     ECOLOGITS_CONSTANTS,
-    GPT4O_PARAMS,
+    GPT5_PARAMS,
     ALTMAN_PARAMS,
     calculateEnergyAndEmissions,
     getEnergyPerToken,

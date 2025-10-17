@@ -38,8 +38,8 @@ function calculateEnergyAndEmissions(outputTokens, method = 'community') {
     };
   } else {
     // Community estimates using EcoLogits methodology
-    const totalParams = 440e9;
-    const activeParamsBillions = 55;
+    const totalParams = 300e9;
+    const activeParamsBillions = 60;
 
     const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
     const memoryRequired = 1.2 * totalParams * GPU_BITS / 8;
@@ -78,7 +78,7 @@ function calculateEnergyOldBuggy(outputTokens, method = 'community') {
     };
   } else {
     // OLD BUGGY VERSION - missing GPU count and server energy
-    const activeParamsBillions = 55;
+    const activeParamsBillions = 60;
     const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
     const totalEnergy = outputTokens * energyPerToken * PUE; // WRONG!
     const minEnergy = 0.01;
@@ -94,9 +94,9 @@ function calculateEnergyOldBuggy(outputTokens, method = 'community') {
 
 // Test cases
 const testCases = [
-  { tokens: 10, method: 'community', expectedMin: 0.4, expectedMax: 0.5 },
-  { tokens: 100, method: 'community', expectedMin: 4.1, expectedMax: 4.2 },
-  { tokens: 1000, method: 'community', expectedMin: 41.4, expectedMax: 41.5 },
+  { tokens: 10, method: 'community', expectedMin: 0.24, expectedMax: 0.25 },
+  { tokens: 100, method: 'community', expectedMin: 2.43, expectedMax: 2.45 },
+  { tokens: 1000, method: 'community', expectedMin: 24.39, expectedMax: 24.40 },
   { tokens: 100, method: 'altman', expectedMin: 0.04, expectedMax: 0.05 }
 ];
 
@@ -147,8 +147,8 @@ console.log('Detailed Breakdown for 100 tokens (Community method)');
 console.log('='.repeat(70));
 
 const tokens = 100;
-const activeParamsBillions = 55;
-const totalParams = 440e9;
+const activeParamsBillions = 60;
+const totalParams = 300e9;
 
 const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
 const memoryRequired = 1.2 * totalParams * GPU_BITS / 8;
@@ -185,6 +185,6 @@ console.log('1. Load the extension in Chrome');
 console.log('2. Use ChatGPT and generate some responses');
 console.log('3. Open the extension popup');
 console.log('4. Switch between "Community" and "Altman" estimation methods');
-console.log('5. Verify the energy values are reasonable (~4 Wh per 100 tokens for Community)');
+console.log('5. Verify the energy values are reasonable (~2.4 Wh per 100 tokens for Community)');
 console.log('6. Check browser console for any errors');
 console.log();

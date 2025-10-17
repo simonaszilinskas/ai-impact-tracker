@@ -45,7 +45,7 @@ totalEnergy = outputTokens * energyPerToken * PUE
 Where:
 * **ENERGY_ALPHA** = 8.91e-5 Wh/token/B-params (Energy coefficient for model parameters)
 * **ENERGY_BETA** = 1.43e-3 Wh/token (Base energy per token)
-* **activeParamsBillions** = 55 billion (12.5% of 440B total parameters)
+* **activeParamsBillions** = 60 billion (20% of 300B total parameters)
 * **PUE** = 1.2 (Power Usage Effectiveness for data center overhead)
 
 This formula is derived from academic research on LLM energy consumption, scaling with both the number of active parameters and the total tokens processed.
@@ -64,12 +64,13 @@ Where:
 * **781 tokens** = Average output length used for scaling, based on the compar:IA conversation dataset's average for 170k conversations
 * **outputTokens** = Actual tokens in the assistant's response
 
-### Assumptions for ChatGPT (GPT 4o) - Community Estimates
+### Assumptions for ChatGPT (GPT-5) - Community Estimates
 
-* **Total parameters**: 440 billion parameters
-* **Active parameters**: ~55 billion (12.5% activation ratio)
-* **Quantization**: 4-bit precision 
-* **Data center PUE**: 1.2 
+* **Total parameters**: 300 billion parameters
+* **Active parameters**: 60 billion (average, range: 30-90B)
+* **Activation ratio**: 20% (Mixture of Experts architecture)
+* **Quantization**: 4-bit precision
+* **Data center PUE**: 1.2
 * **GPU configuration**: Estimated 8 GPUs per server, 80GB memory per GPU
 
 ## Calculating real-world equivalences

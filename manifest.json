@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "AI Impact Tracker",
-    "version": "2.1",
+    "version": "2.2",
     "description": "Track the environmental impact of your AI usage with relatable equivalents",
     "permissions": ["storage"],
     "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*"],

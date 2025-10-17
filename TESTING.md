@@ -129,25 +129,25 @@ This tests that the shared module works in the content script context.
    - ✅ Shows "⚡️ X.XX Wh consumed today"
    - ✅ Can drag the notification to move it
 
-   Example: "⚡️ 4.15 Wh consumed today"
+   Example: "⚡️ 2.44 Wh consumed today"
 
 6. **Check Console for Calculation Logs**
-   - Should see: `"[Time] Updating energy notification: 4.15 Wh"`
+   - Should see: `"[Time] Updating energy notification: 2.44 Wh"`
    - Energy value should be reasonable:
-     - Short response (~50 tokens): 2-3 Wh
-     - Medium response (~100 tokens): 4-5 Wh
-     - Long response (~500 tokens): 20-25 Wh
+     - Short response (~50 tokens): 1.2-1.5 Wh
+     - Medium response (~100 tokens): 2.4-2.5 Wh
+     - Long response (~500 tokens): 12-13 Wh
 
 7. **Verify Calculation is Correct**
    - Generate another response
    - Note the energy value
-   - It should be ~4 Wh per 100 tokens of response
-   - Calculate: response_length_chars / 4 = tokens, tokens * 0.04 ≈ Wh
+   - It should be ~2.4 Wh per 100 tokens of response
+   - Calculate: response_length_chars / 4 = tokens, tokens * 0.024 ≈ Wh
 
 **✅ PASS Criteria for Content Script:**
 - No errors in console
 - Notification appears and shows energy
-- Energy values are reasonable (not 0.76 Wh for 100 tokens)
+- Energy values are reasonable (~2.4 Wh for 100 tokens)
 - Notification is draggable
 
 ### Step 2.3: Test Popup (popup.js)
@@ -218,8 +218,8 @@ This is the critical test for issue #13 - verifying recalculation works correctl
    - Watch the values change
 
 4. **Verify Recalculation**
-   - Energy value should DROP by ~100x
-   - Example: 42.50 Wh → ~0.40 Wh
+   - Energy value should DROP by ~56x
+   - Example: 24.4 Wh → ~0.43 Wh
    - All environmental equivalents should also drop
    - Check console for: `"Recalculated X logs with altman method"`
    - ✅ NO errors should appear
@@ -231,7 +231,7 @@ This is the critical test for issue #13 - verifying recalculation works correctl
 
 6. **Verify Values Return**
    - Energy value should RETURN to original (±0.1 Wh)
-   - Example: 0.40 Wh → 42.50 Wh
+   - Example: 0.43 Wh → 24.4 Wh
    - ✅ Should be approximately the same as step 1
    - Check console for: `"Recalculated X logs with community method"`
 
@@ -245,8 +245,8 @@ This is the critical test for issue #13 - verifying recalculation works correctl
 
 **✅ PASS Criteria for Method Switching:**
 - Switching works without errors
-- Community method: ~4 Wh per 100 tokens
-- Altman method: ~0.04 Wh per 100 tokens (~100x lower)
+- Community method: ~2.4 Wh per 100 tokens
+- Altman method: ~0.04 Wh per 100 tokens (~56x lower)
 - Values are consistent when switching back
 - No console errors during recalculation
 
@@ -408,11 +408,11 @@ Make sure we didn't break anything existing.
 | test-refactoring.js | All tests pass | ⬜ |
 | Extension loads | No errors | ⬜ |
 | Content script works | Notification appears | ⬜ |
-| Energy values correct | ~4 Wh per 100 tokens | ⬜ |
+| Energy values correct | ~2.4 Wh per 100 tokens | ⬜ |
 | Popup opens | No errors | ⬜ |
 | Popup shows data | Displays correctly | ⬜ |
 | Method switching | Values change correctly | ⬜ |
-| Community → Altman | Values drop ~100x | ⬜ |
+| Community → Altman | Values drop ~56x | ⬜ |
 | Altman → Community | Values return | ⬜ |
 | Storage persists | Data remembered | ⬜ |
 | No console errors | Clean console | ⬜ |
@@ -422,7 +422,7 @@ Make sure we didn't break anything existing.
 ## Success Criteria
 
 ✅ **Issue #13 Fixed** if:
-- Energy values are ~4.15 Wh per 100 tokens (not 0.76 Wh)
+- Energy values are ~2.44 Wh per 100 tokens (using GPT-5 params)
 - Method switching works correctly
 - Recalculation produces correct values
 
@@ -449,7 +449,7 @@ Use this for rapid testing:
 □ Run test-refactoring.js → All pass
 □ Load extension → No errors
 □ Visit ChatGPT → Notification appears
-□ Check energy value → ~4 Wh per 100 tokens
+□ Check energy value → ~2.4 Wh per 100 tokens
 □ Open popup → Displays correctly
 □ Switch methods → Values change
 □ Check console → No errors
