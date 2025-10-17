@@ -418,7 +418,10 @@ function updateLifetimeStats(logs) {
 
     document.getElementById('lifetime-phones').textContent = formatNumber(equivalents.phones);
     document.getElementById('lifetime-elevator').textContent = `${formatNumber(equivalents.elevator)} floors`;
-    
+
+    // Update global scale comparison
+    updateGlobalScaleComparison(logs, totalEnergyUsage);
+
     // Force a repaint to ensure updates are visible
     document.body.style.display = 'none';
     document.body.offsetHeight; // Trigger reflow
@@ -426,9 +429,77 @@ function updateLifetimeStats(logs) {
   } catch (error) {
     console.error('Error updating environmental equivalents:', error);
   }
-  
+
   // Log the values for debugging
   console.log('Lifetime environmental equivalents:', equivalents);
+}
+
+/**
+ * Updates the global scale comparison section
+ * @param {Array} logs - Array of conversation log entries
+ * @param {number} totalEnergyUsage - Total lifetime energy usage in Wh
+ */
+function updateGlobalScaleComparison(logs, totalEnergyUsage) {
+  const messageElement = document.getElementById('lifetime-global-scale-message');
+
+  if (!messageElement) {
+    console.warn('Global scale message element not found');
+    return;
+  }
+
+  // Calculate daily average energy usage
+  if (logs.length === 0 || totalEnergyUsage <= 0) {
+    messageElement.innerHTML = 'Start using ChatGPT to see your global impact!';
+    return;
+  }
+
+  // Find the date range of logs
+  const timestamps = logs.map(log => new Date(log.timestamp).getTime());
+  const oldestTimestamp = Math.min(...timestamps);
+  const newestTimestamp = Math.max(...timestamps);
+
+  // Calculate number of days (minimum 1 day to avoid division by zero)
+  const daysDifference = Math.max(1, Math.ceil((newestTimestamp - oldestTimestamp) / (1000 * 60 * 60 * 24)));
+
+  // Calculate daily average
+  const dailyAverageWh = totalEnergyUsage / daysDifference;
+
+  // Get global scale comparison using the global-scale module
+  if (typeof window.getGlobalScaleComparison === 'function') {
+    const comparison = window.getGlobalScaleComparison(dailyAverageWh);
+
+    if (comparison && comparison.message) {
+      // Format the message with bold highlights
+      let formattedMessage = comparison.message;
+
+      // Make the daily average bold
+      formattedMessage = formattedMessage.replace(
+        `${dailyAverageWh.toFixed(2)} Wh`,
+        `<strong>${dailyAverageWh.toFixed(2)} Wh</strong>`
+      );
+
+      // Make the global consumption bold
+      formattedMessage = formattedMessage.replace(
+        comparison.formattedGlobalConsumption,
+        `<strong>${comparison.formattedGlobalConsumption}</strong>`
+      );
+
+      // Make the entity name bold
+      formattedMessage = formattedMessage.replace(
+        comparison.closestEntity.name,
+        `<strong>${comparison.closestEntity.name}</strong>`
+      );
+
+      messageElement.innerHTML = formattedMessage;
+
+      console.log('Global scale comparison:', comparison);
+    } else {
+      messageElement.innerHTML = 'Insufficient data for global comparison.';
+    }
+  } else {
+    console.error('getGlobalScaleComparison function not available. Make sure global-scale.js is loaded.');
+    messageElement.innerHTML = 'Global scale comparison unavailable.';
+  }
 }
 
 /**

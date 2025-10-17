@@ -332,8 +332,45 @@
       color: var(--muted-text);
     }
 
+
+    .global-scale-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .global-scale-header {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: var(--header-text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .global-scale-header .emoji {
+      font-size: 16px;
+    }
+
+    .global-scale-message {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--equiv-item-background);
+      padding: 12px;
+      border-radius: 6px;
+      border-left: 3px solid var(--primary-color);
+    }
+
+    .global-scale-message strong {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
   </style>
   <script src="energy-calculator.js"></script>
+  <script src="global-scale.js"></script>
   <script src="popup.js"></script>
 </head>
 <body>
@@ -475,6 +512,17 @@
               <div class="equivalence-label">Elevator travel</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Global Scale Comparison Section (Lifetime only) -->
+      <div class="global-scale-section" id="lifetime-global-scale">
+        <div class="global-scale-header">
+          <span class="emoji">🌍</span>
+          <span>Global scale perspective</span>
+        </div>
+        <div class="global-scale-message" id="lifetime-global-scale-message">
+          Start using ChatGPT to see your global impact!
         </div>
       </div>
     </div>

@@ -241,13 +241,3 @@ if (typeof module !== 'undefined' && module.exports) {
     getNumGPUs
   };
 }
-
-// ES6 exports for modern module systems
-export {
-  ECOLOGITS_CONSTANTS,
-  GPT5_PARAMS,
-  ALTMAN_PARAMS,
-  calculateEnergyAndEmissions,
-  getEnergyPerToken,
-  getNumGPUs
-};
