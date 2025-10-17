@@ -163,8 +163,8 @@ This tests that the shared module works as an ES6 module in the popup.
    - ✅ Shows message count
    - ✅ Shows energy usage in Wh
    - ✅ Shows environmental equivalents:
-     - 🎬 YouTube streaming time
-     - 💧 Water consumption
+     - 📺 YouTube streaming time
+     - 💡 Light bulb runtime
      - 📱 Phone charges
      - 🛗 Elevator floors
 

@@ -302,23 +302,33 @@ function updateTodayStats(logs) {
     }
     
     document.getElementById('today-movies').textContent = todayFormattedMovieTime;
-    
-    // Special handling for water consumption with explicit debugging
-    const todayWaterElement = document.getElementById('today-toasts');
-    if (todayWaterElement) {
-      console.log('Updating today water consumption element:', todayWaterElement, 'with value:', equivalents.water);
-      // Format water in ml if small, otherwise in L with simpler format
-      if (equivalents.water < 0.01) {
-        todayWaterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(0))} ml`;
-      } else if (equivalents.water < 1) {
-        todayWaterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(0))} ml`;
+
+    // Special handling for light bulb runtime with explicit debugging
+    const todayLightbulbElement = document.getElementById('today-toasts');
+    if (todayLightbulbElement) {
+      console.log('Updating today light bulb runtime element:', todayLightbulbElement, 'with value:', equivalents.lightbulb);
+      // Format light bulb runtime - show in minutes if < 60, hours if >= 60
+      const lightBulbMinutes = equivalents.lightbulb;
+      if (lightBulbMinutes < 1) {
+        // Less than 1 minute, show as seconds
+        const seconds = Math.round(lightBulbMinutes * 60);
+        todayLightbulbElement.textContent = `${formatNumber(seconds)} secs`;
+      } else if (lightBulbMinutes < 60) {
+        // Less than 60 minutes, show in minutes
+        todayLightbulbElement.textContent = `${formatNumber(Math.round(lightBulbMinutes))} mins`;
       } else {
-        todayWaterElement.textContent = `${formatNumber(equivalents.water.toFixed(1))} L`;
+        // 60+ minutes, show in hours
+        const lightBulbHours = lightBulbMinutes / 60;
+        if (lightBulbHours < 10) {
+          todayLightbulbElement.textContent = `${formatNumber(lightBulbHours.toFixed(1))} hours`;
+        } else {
+          todayLightbulbElement.textContent = `${formatNumber(Math.round(lightBulbHours))} hours`;
+        }
       }
     } else {
-      console.error('Today water consumption element not found! Check the ID in HTML.');
+      console.error('Today light bulb runtime element not found! Check the ID in HTML.');
     }
-    
+
     document.getElementById('today-phones').textContent = formatNumber(equivalents.phones);
     document.getElementById('today-elevator').textContent = `${formatNumber(equivalents.elevator)} floors`;
   } catch (error) {
@@ -379,23 +389,33 @@ function updateLifetimeStats(logs) {
     }
     
     document.getElementById('lifetime-movies').textContent = lifetimeFormattedMovieTime;
-    
-    // Special handling for water consumption with explicit debugging
-    const waterElement = document.getElementById('lifetime-toasts');
-    if (waterElement) {
-      console.log('Updating water consumption element:', waterElement, 'with value:', equivalents.water);
-      // Format water in ml if small, otherwise in L with simpler format
-      if (equivalents.water < 0.01) {
-        waterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(0))} ml`;
-      } else if (equivalents.water < 1) {
-        waterElement.textContent = `${formatNumber((equivalents.water * 1000).toFixed(0))} ml`;
+
+    // Special handling for light bulb runtime with explicit debugging
+    const lightbulbElement = document.getElementById('lifetime-toasts');
+    if (lightbulbElement) {
+      console.log('Updating light bulb runtime element:', lightbulbElement, 'with value:', equivalents.lightbulb);
+      // Format light bulb runtime - show in minutes if < 60, hours if >= 60
+      const lightBulbMinutes = equivalents.lightbulb;
+      if (lightBulbMinutes < 1) {
+        // Less than 1 minute, show as seconds
+        const seconds = Math.round(lightBulbMinutes * 60);
+        lightbulbElement.textContent = `${formatNumber(seconds)} secs`;
+      } else if (lightBulbMinutes < 60) {
+        // Less than 60 minutes, show in minutes
+        lightbulbElement.textContent = `${formatNumber(Math.round(lightBulbMinutes))} mins`;
       } else {
-        waterElement.textContent = `${formatNumber(equivalents.water.toFixed(1))} L`;
+        // 60+ minutes, show in hours
+        const lightBulbHours = lightBulbMinutes / 60;
+        if (lightBulbHours < 10) {
+          lightbulbElement.textContent = `${formatNumber(lightBulbHours.toFixed(1))} hours`;
+        } else {
+          lightbulbElement.textContent = `${formatNumber(Math.round(lightBulbHours))} hours`;
+        }
       }
     } else {
-      console.error('Water consumption element not found! Check the ID in HTML.');
+      console.error('Light bulb runtime element not found! Check the ID in HTML.');
     }
-    
+
     document.getElementById('lifetime-phones').textContent = formatNumber(equivalents.phones);
     document.getElementById('lifetime-elevator').textContent = `${formatNumber(equivalents.elevator)} floors`;
     
@@ -429,22 +449,22 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
     return {
       electricity: "0",
       movies: 0,
-      water: 0,
+      lightbulb: 0,
       phones: 0,
       elevator: 0
     };
   }
-  
+
   // Environmental equivalents based on methodology.md
   // YouTube video streaming (0.25 Wh per minute of standard definition streaming)
   const movieMinutes = Math.max(0, Math.round(validEnergyUsage / 0.25));
-  
-  // Water consumption calculation (liters)
-  // Water_Consumption_Liters = (Energy_Wh / 1000) * WUE_L_per_kWh
-  // Using WUE of 0.2 L/kWh for Azure data centers
-  const waterConsumptionLiters = Math.max(0, (validEnergyUsage / 1000) * 0.2);
-  console.log(`Calculated water consumption: (${validEnergyUsage} Wh / 1000) * 0.2 = ${waterConsumptionLiters.toFixed(6)} liters`);
-  
+
+  // Light bulb runtime calculation (60W incandescent bulb)
+  // 60W bulb = 0.06 kW
+  // Runtime in minutes = (energyWh / 60W) * 60 minutes
+  const lightBulbMinutes = Math.max(0, (validEnergyUsage / 60) * 60);
+  console.log(`Calculated light bulb runtime: (${validEnergyUsage} Wh / 60) * 60 = ${lightBulbMinutes.toFixed(2)} minutes`);
+
   // Phone charges (10-15 Wh per full charge)
   const phoneCharges = Math.max(0, Math.round(validEnergyUsage / 13.5 * 10) / 10);
   
@@ -453,16 +473,16 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
   
   console.log(`Calculating equivalents for ${validEnergyUsage}Wh (${energyUsageKwh}kWh):`, {
     movies: movieMinutes,
-    water: waterConsumptionLiters,
+    lightbulb: lightBulbMinutes,
     phones: phoneCharges,
     elevator: elevatorFloors
   });
-  
+
   // Convert to numbers and apply sensible defaults to prevent NaN
   return {
     electricity: energyUsageKwh.toFixed(3),
     movies: movieMinutes || 0,
-    water: waterConsumptionLiters || 0,
+    lightbulb: lightBulbMinutes || 0,
     phones: phoneCharges || 0,
     elevator: elevatorFloors || 0
   };

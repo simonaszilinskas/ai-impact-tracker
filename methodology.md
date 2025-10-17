@@ -91,24 +91,31 @@ To provide context for the energy consumed by AI interactions, the tool converts
 
 **Source**: Based on multiple peer-reviewed studies showing streaming infrastructure consumes approximately 15 Wh per hour of streaming.
 
-### Water consumption
+### Light bulb runtime
 
-**Energy estimate**: ~0.2 L water per kWh of energy
+**Energy estimate**: 60W incandescent light bulb runtime
 
 **Methodology**:
-* Based on Water Usage Effectiveness (WUE) metrics from cloud data centers
-* Formula: `waterConsumptionLiters = (energyUsageWh / 1000) * 0.2`
-* Uses Microsoft Azure's reported average WUE of 0.2 L/kWh
+* Based on a standard 60W incandescent light bulb
+* Provides a direct energy-to-energy comparison that's universally relatable
+* Formula: `lightBulbMinutes = (energyUsageWh / 60) * 60`
+* 60W bulb = 0.06 kW, so runtime in minutes equals energy in Wh
 
-**Sources**:
-* Microsoft Sustainability Report (2023) - https://www.microsoft.com/sustainability
-* Patterson et al. (2021) - "Carbon Emissions and Large Neural Network Training" - https://arxiv.org/abs/2104.10350
-* Xu et al. (2023) - "Making AI Less 'Thirsty'" - https://arxiv.org/abs/2304.03271
+**Why this metric**:
+* **Universal**: Everyone understands how long a light bulb runs
+* **Direct comparison**: Energy-to-energy (not indirect like water consumption)
+* **Easy to visualize**: People can relate to "leaving a light on for X hours"
+* **Simple calculation**: No regional variations or complex conversion factors
 
-**Limitations**:
-* Regional variability in WUE based on data center location and cooling methods
-* Excludes embodied water used in chip manufacturing
-* Based on annualized averages rather than task-specific measurements
+**Display format**:
+* < 1 minute: Shows in seconds (e.g., "15 secs")
+* 1-59 minutes: Shows in minutes (e.g., "42 mins")
+* 60+ minutes: Shows in hours (e.g., "4.2 hours" or "15 hours")
+
+**Example conversions**:
+* 4.15 Wh → ~4 minutes of a 60W light bulb
+* 41.5 Wh → ~42 minutes of a 60W light bulb
+* 415 Wh → ~7 hours of a 60W light bulb
 
 ### Phones charged
 
