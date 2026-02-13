@@ -379,10 +379,7 @@
       <div class="icon"><i class="ri-leaf-line"></i></div>
       <div>AI impact tracker</div>
     </div>
-    <select id="estimation-method" class="estimation-select">
-      <option value="community">Community estimates</option>
-      <option value="altman">Sam Altman's estimation</option>
-    </select>
+    <span class="estimation-label">EcoLogits v0.9.x</span>
   </div>
   
   <div class="tab-container">
@@ -409,9 +406,9 @@
           <div class="stat-data">
             <div class="message-value" id="today-energy">0</div>
             <div class="stat-label">
-              <span>Watt-hours used</span>
+              <span id="today-energy-unit">mWh used</span>
               <span class="info-tooltip"><i class="ri-question-line"></i>
-                <div class="tooltip-text">This is an estimate based on energy usage patterns for large Mixture of Experts (MoE) models with 300B total parameters and 30-90B active parameters per inference.</div>
+                <div class="tooltip-text">Estimated using the EcoLogits v0.9.x methodology with H100 GPUs, batch size 64, and a 300B MoE model (60B active parameters).</div>
               </span>
             </div>
           </div>
@@ -471,9 +468,9 @@
           <div class="stat-data">
             <div class="message-value" id="lifetime-energy">0</div>
             <div class="stat-label">
-              <span>Watt-hours used</span>
+              <span id="lifetime-energy-unit">mWh used</span>
               <span class="info-tooltip"><i class="ri-question-line"></i>
-                <div class="tooltip-text">This is an estimate based on energy usage patterns for large Mixture of Experts (MoE) models with 300B total parameters and 30-90B active parameters per inference.</div>
+                <div class="tooltip-text">Estimated using the EcoLogits v0.9.x methodology with H100 GPUs, batch size 64, and a 300B MoE model (60B active parameters).</div>
               </span>
             </div>
           </div>

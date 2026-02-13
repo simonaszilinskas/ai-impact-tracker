@@ -1,174 +1,124 @@
 #!/usr/bin/env node
 /**
  * Verification script for issue #13 fix
- * Tests that popup.js now calculates energy correctly
+ * Tests that energy calculations are correct
+ * Updated for EcoLogits v0.9.x methodology
  */
 
 console.log('='.repeat(70));
-console.log('VERIFICATION: Issue #13 - popup.js Energy Calculation Fix');
+console.log('VERIFICATION: Issue #13 - Energy Calculation Fix');
 console.log('='.repeat(70));
 console.log();
 
-// EcoLogits methodology constants
-const ENERGY_ALPHA = 8.91e-5;
-const ENERGY_BETA = 1.43e-3;
-const LATENCY_ALPHA = 8.02e-4;
-const LATENCY_BETA = 2.23e-2;
+// EcoLogits v0.9.x methodology constants
+const GPU_ENERGY_ALPHA = 1.1665273170451914e-06;
+const GPU_ENERGY_BETA = -0.011205921025579175;
+const GPU_ENERGY_GAMMA = 4.052928146734005e-05;
+const LATENCY_ALPHA = 6.78e-4;
+const LATENCY_BETA = 3.12e-4;
+const LATENCY_GAMMA = 1.94e-2;
+const BATCH_SIZE = 64;
 const PUE = 1.2;
 const GPU_MEMORY = 80;
-const SERVER_POWER_WITHOUT_GPU = 1;
+const SERVER_POWER_WITHOUT_GPU = 1.2;
 const INSTALLED_GPUS = 8;
-const GPU_BITS = 4;
-const WORLD_EMISSION_FACTOR = 0.418;
+const GPU_BITS = 16;
+const EMISSION_FACTOR = 0.38355;
 
 /**
- * Corrected calculation function (matches both content.js and fixed popup.js)
+ * EcoLogits v0.9.x calculation
  */
-function calculateEnergyAndEmissions(outputTokens, method = 'community') {
-  if (method === 'altman') {
-    const altmanEnergyPerToken = 0.34 / 781;
-    const totalEnergy = outputTokens * altmanEnergyPerToken;
-    const minEnergy = 0.01;
-    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
-    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
+function calculateEnergyAndEmissions(outputTokens) {
+  const totalParams = 300e9;
+  const activeParamsBillions = 60;
 
-    return {
-      totalEnergy: normalizedEnergy,
-      co2Emissions
-    };
-  } else {
-    // Community estimates using EcoLogits methodology
-    const totalParams = 300e9;
-    const activeParamsBillions = 60;
+  const gpuEnergyPerToken_kWh = (GPU_ENERGY_ALPHA * Math.exp(GPU_ENERGY_BETA * BATCH_SIZE) * activeParamsBillions + GPU_ENERGY_GAMMA) / 1000;
 
-    const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
-    const memoryRequired = 1.2 * totalParams * GPU_BITS / 8;
-    const numGPUs = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
-    const latencyPerToken = LATENCY_ALPHA * activeParamsBillions + LATENCY_BETA;
-    const totalLatency = outputTokens * latencyPerToken;
-    const gpuEnergy = outputTokens * energyPerToken * numGPUs;
-    const serverEnergyWithoutGPU = totalLatency * SERVER_POWER_WITHOUT_GPU * numGPUs / INSTALLED_GPUS / 3600 * 1000;
-    const serverEnergy = serverEnergyWithoutGPU + gpuEnergy;
-    const totalEnergy = PUE * serverEnergy;
-    const minEnergy = 0.01;
-    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
-    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
+  const memoryRequired = 1.2 * totalParams * GPU_BITS / 8;
+  const numGPUsRaw = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
+  const numGPUs = Math.pow(2, Math.ceil(Math.log2(numGPUsRaw)));
 
-    return {
-      totalEnergy: normalizedEnergy,
-      co2Emissions
-    };
-  }
+  const latencyPerToken = LATENCY_ALPHA * activeParamsBillions + LATENCY_BETA * BATCH_SIZE + LATENCY_GAMMA;
+  const totalLatency = outputTokens * latencyPerToken;
+
+  const gpuEnergy_kWh = outputTokens * gpuEnergyPerToken_kWh;
+  const serverEnergy_kWh = (totalLatency / 3600) * SERVER_POWER_WITHOUT_GPU * (numGPUs / INSTALLED_GPUS) * (1 / BATCH_SIZE);
+
+  const totalEnergy = PUE * (serverEnergy_kWh + numGPUs * gpuEnergy_kWh) * 1000;
+  const minEnergy = 0.01;
+  const normalizedEnergy = Math.max(totalEnergy, minEnergy);
+  const co2Emissions = normalizedEnergy * EMISSION_FACTOR;
+
+  return { totalEnergy: normalizedEnergy, co2Emissions };
 }
 
 /**
- * Old buggy calculation (for comparison)
+ * Old buggy calculation (for comparison - v0.2 methodology)
  */
-function calculateEnergyOldBuggy(outputTokens, method = 'community') {
-  if (method === 'altman') {
-    const altmanEnergyPerToken = 0.34 / 781;
-    const totalEnergy = outputTokens * altmanEnergyPerToken;
-    const minEnergy = 0.01;
-    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
-    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
-
-    return {
-      totalEnergy: normalizedEnergy,
-      co2Emissions
-    };
-  } else {
-    // OLD BUGGY VERSION - missing GPU count and server energy
-    const activeParamsBillions = 60;
-    const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
-    const totalEnergy = outputTokens * energyPerToken * PUE; // WRONG!
-    const minEnergy = 0.01;
-    const normalizedEnergy = Math.max(totalEnergy, minEnergy);
-    const co2Emissions = normalizedEnergy * WORLD_EMISSION_FACTOR;
-
-    return {
-      totalEnergy: normalizedEnergy,
-      co2Emissions
-    };
-  }
+function calculateEnergyOldBuggy(outputTokens) {
+  const activeParamsBillions = 60;
+  const energyPerToken = 8.91e-5 * activeParamsBillions + 1.43e-3;
+  const totalEnergy = outputTokens * energyPerToken * PUE; // WRONG!
+  const minEnergy = 0.01;
+  const normalizedEnergy = Math.max(totalEnergy, minEnergy);
+  const co2Emissions = normalizedEnergy * 0.418;
+  return { totalEnergy: normalizedEnergy, co2Emissions };
 }
 
 // Test cases
 const testCases = [
-  { tokens: 10, method: 'community', expectedMin: 0.33, expectedMax: 0.34 },
-  { tokens: 100, method: 'community', expectedMin: 3.31, expectedMax: 3.33 },
-  { tokens: 1000, method: 'community', expectedMin: 33.19, expectedMax: 33.21 },
-  { tokens: 100, method: 'altman', expectedMin: 0.04, expectedMax: 0.05 }
+  { tokens: 10, expectedMin: 0.023, expectedMax: 0.026 },
+  { tokens: 100, expectedMin: 0.23, expectedMax: 0.26 },
+  { tokens: 1000, expectedMin: 2.3, expectedMax: 2.6 }
 ];
 
 let allTestsPassed = true;
 
-console.log('Testing Community Estimates (EcoLogits methodology)');
+console.log('Testing EcoLogits v0.9.x methodology');
 console.log('-'.repeat(70));
 
 testCases.forEach((test, index) => {
-  if (test.method === 'community') {
-    const correct = calculateEnergyAndEmissions(test.tokens, test.method);
-    const buggy = calculateEnergyOldBuggy(test.tokens, test.method);
-    const error = ((correct.totalEnergy / buggy.totalEnergy) - 1) * 100;
-    const passed = correct.totalEnergy >= test.expectedMin && correct.totalEnergy <= test.expectedMax;
+  const correct = calculateEnergyAndEmissions(test.tokens);
+  const buggy = calculateEnergyOldBuggy(test.tokens);
+  const passed = correct.totalEnergy >= test.expectedMin && correct.totalEnergy <= test.expectedMax;
 
-    console.log(`Test ${index + 1}: ${test.tokens} tokens`);
-    console.log(`  ❌ Old buggy:    ${buggy.totalEnergy.toFixed(4)} Wh`);
-    console.log(`  ✅ Corrected:    ${correct.totalEnergy.toFixed(4)} Wh`);
-    console.log(`  📊 Error factor: ${(correct.totalEnergy / buggy.totalEnergy).toFixed(2)}x (${error.toFixed(0)}% underestimation in old version)`);
-    console.log(`  🎯 Expected:     ${test.expectedMin.toFixed(2)} - ${test.expectedMax.toFixed(2)} Wh`);
-    console.log(`  ${passed ? '✅ PASS' : '❌ FAIL'}`);
-    console.log();
+  console.log(`Test ${index + 1}: ${test.tokens} tokens`);
+  console.log(`  Old v0.2 buggy:  ${buggy.totalEnergy.toFixed(4)} Wh`);
+  console.log(`  New v0.9.x:      ${correct.totalEnergy.toFixed(4)} Wh`);
+  console.log(`  Expected:        ${test.expectedMin.toFixed(3)} - ${test.expectedMax.toFixed(3)} Wh`);
+  console.log(`  ${passed ? '✅ PASS' : '❌ FAIL'}`);
+  console.log();
 
-    if (!passed) allTestsPassed = false;
-  }
-});
-
-console.log('Testing Sam Altman Estimates');
-console.log('-'.repeat(70));
-
-testCases.forEach((test, index) => {
-  if (test.method === 'altman') {
-    const correct = calculateEnergyAndEmissions(test.tokens, test.method);
-    const passed = correct.totalEnergy >= test.expectedMin && correct.totalEnergy <= test.expectedMax;
-
-    console.log(`Test ${index + 1}: ${test.tokens} tokens (Altman method)`);
-    console.log(`  ✅ Calculated:   ${correct.totalEnergy.toFixed(4)} Wh`);
-    console.log(`  🎯 Expected:     ${test.expectedMin.toFixed(2)} - ${test.expectedMax.toFixed(2)} Wh`);
-    console.log(`  ${passed ? '✅ PASS' : '❌ FAIL'}`);
-    console.log();
-
-    if (!passed) allTestsPassed = false;
-  }
+  if (!passed) allTestsPassed = false;
 });
 
 console.log('='.repeat(70));
-console.log('Detailed Breakdown for 100 tokens (Community method)');
+console.log('Detailed Breakdown for 100 tokens (EcoLogits v0.9.x)');
 console.log('='.repeat(70));
 
 const tokens = 100;
 const activeParamsBillions = 60;
 const totalParams = 300e9;
 
-const energyPerToken = ENERGY_ALPHA * activeParamsBillions + ENERGY_BETA;
+const gpuEnergyPerToken_kWh = (GPU_ENERGY_ALPHA * Math.exp(GPU_ENERGY_BETA * BATCH_SIZE) * activeParamsBillions + GPU_ENERGY_GAMMA) / 1000;
 const memoryRequired = 1.2 * totalParams * GPU_BITS / 8;
-const numGPUs = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
-const latencyPerToken = LATENCY_ALPHA * activeParamsBillions + LATENCY_BETA;
+const numGPUsRaw = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
+const numGPUs = Math.pow(2, Math.ceil(Math.log2(numGPUsRaw)));
+const latencyPerToken = LATENCY_ALPHA * activeParamsBillions + LATENCY_BETA * BATCH_SIZE + LATENCY_GAMMA;
 const totalLatency = tokens * latencyPerToken;
-const gpuEnergy = tokens * energyPerToken * numGPUs;
-const serverEnergyWithoutGPU = totalLatency * SERVER_POWER_WITHOUT_GPU * numGPUs / INSTALLED_GPUS / 3600 * 1000;
-const serverEnergy = serverEnergyWithoutGPU + gpuEnergy;
-const totalEnergy = PUE * serverEnergy;
+const gpuEnergy_kWh = tokens * gpuEnergyPerToken_kWh;
+const serverEnergy_kWh = (totalLatency / 3600) * SERVER_POWER_WITHOUT_GPU * (numGPUs / INSTALLED_GPUS) * (1 / BATCH_SIZE);
+const totalEnergy = PUE * (serverEnergy_kWh + numGPUs * gpuEnergy_kWh) * 1000;
 
-console.log(`1. Energy per token (per GPU):    ${energyPerToken.toFixed(6)} Wh/token`);
-console.log(`2. Memory required:                ${(memoryRequired / 1e9).toFixed(2)} GB`);
-console.log(`3. Number of GPUs:                 ${numGPUs} GPUs`);
+console.log(`1. GPU energy per token:           ${gpuEnergyPerToken_kWh.toExponential(4)} kWh/token`);
+console.log(`2. Memory required:                ${(memoryRequired / 1e9).toFixed(0)} GB`);
+console.log(`3. Number of GPUs (power-of-2):    ${numGPUs} GPUs (raw: ${numGPUsRaw})`);
 console.log(`4. Latency per token:              ${latencyPerToken.toFixed(6)} s/token`);
 console.log(`5. Total latency:                  ${totalLatency.toFixed(4)} seconds`);
-console.log(`6. GPU energy:                     ${gpuEnergy.toFixed(4)} Wh`);
-console.log(`7. Server energy (non-GPU):        ${serverEnergyWithoutGPU.toFixed(4)} Wh`);
-console.log(`8. Total server energy:            ${serverEnergy.toFixed(4)} Wh`);
-console.log(`9. With PUE (${PUE}):                    ${totalEnergy.toFixed(4)} Wh`);
+console.log(`6. GPU energy (all GPUs):          ${(numGPUs * gpuEnergy_kWh * 1000).toFixed(6)} Wh`);
+console.log(`7. Server energy (non-GPU):        ${(serverEnergy_kWh * 1000).toFixed(6)} Wh`);
+console.log(`8. Batch size amortization:        ÷${BATCH_SIZE}`);
+console.log(`9. With PUE (${PUE}):                ${totalEnergy.toFixed(6)} Wh`);
 console.log();
 
 console.log('='.repeat(70));
@@ -179,12 +129,4 @@ if (allTestsPassed) {
   process.exit(1);
 }
 console.log('='.repeat(70));
-console.log();
-console.log('Next steps:');
-console.log('1. Load the extension in Chrome');
-console.log('2. Use ChatGPT and generate some responses');
-console.log('3. Open the extension popup');
-console.log('4. Switch between "Community" and "Altman" estimation methods');
-console.log('5. Verify the energy values are reasonable (~3.3 Wh per 100 tokens for Community)');
-console.log('6. Check browser console for any errors');
 console.log();

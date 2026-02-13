@@ -31,35 +31,6 @@ function checkExtensionContext() {
   return false;
 }
 
-/**
- * Gets the current estimation method from storage
- * @returns {Promise<string>} 'community' or 'altman'
- */
-function getEstimationMethod() {
-  return new Promise((resolve) => {
-    if (!checkExtensionContext()) {
-      console.log('Content script: No extension context, defaulting to community');
-      resolve('community'); // Default to community estimates
-      return;
-    }
-    
-    try {
-      chrome.storage.local.get(['estimationMethod'], function(result) {
-        if (chrome.runtime.lastError) {
-          console.error('Content script: Error getting estimation method:', chrome.runtime.lastError);
-          resolve('community');
-        } else {
-          const method = result.estimationMethod || 'community';
-          console.log('Content script: Loaded estimation method from storage:', method);
-          resolve(method);
-        }
-      });
-    } catch (error) {
-      console.error('Content script: Error accessing storage for estimation method:', error);
-      resolve('community');
-    }
-  });
-}
 
 /**
  * Saves data to Chrome's local storage
@@ -112,9 +83,8 @@ async function saveLog(userMessage, assistantResponse) {
   const userTokenCount = Math.ceil(userMessage.length / 4);
   const assistantTokenCount = Math.ceil(assistantResponse.length / 4);
   
-  // Get the current estimation method and calculate environmental impact
-  const estimationMethod = await getEstimationMethod();
-  const energyData = calculateEnergyAndEmissions(assistantTokenCount, estimationMethod);
+  // Calculate environmental impact using EcoLogits v0.9.x methodology
+  const energyData = calculateEnergyAndEmissions(assistantTokenCount);
   const energyUsage = energyData.totalEnergy;
   const co2Emissions = energyData.co2Emissions;
   
@@ -651,17 +621,24 @@ function updateUsageNotification() {
       // Continue with defaults (zeros) if logs processing fails
     }
     
-    // Format energy usage for display (1 decimal place)
-    const formattedEnergy = todayEnergyUsage.toFixed(1);
-    
+    // Format energy with adaptive units (mWh for small values, Wh for larger)
+    let formattedEnergy, energyUnit;
+    if (todayEnergyUsage >= 1) {
+      formattedEnergy = todayEnergyUsage.toFixed(1);
+      energyUnit = 'Wh';
+    } else {
+      formattedEnergy = (todayEnergyUsage * 1000).toFixed(0);
+      energyUnit = 'mWh';
+    }
+
     // Add a timestamp for debugging
     const updateTime = new Date().toLocaleTimeString();
-    
+
     // One-line message with energy usage information
-    let message = `<span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} Wh consumed today</span>`;
-    
+    let message = `<span class="ai-impact-emoji">⚡️</span> <span class="ai-impact-energy">${formattedEnergy} ${energyUnit} consumed today</span>`;
+
     // Log for debugging how frequently updates occur
-    console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} Wh`);
+    console.log(`[${updateTime}] Updating energy notification: ${formattedEnergy} ${energyUnit}`);
     
     // Update the UI with error handling
     try {
@@ -789,21 +766,6 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
       }
     }
     return true;
-  } else if (message.type === 'estimationMethodChanged') {
-    // Acknowledge the change and reload logs from storage after a brief delay
-    console.log('Content script: Estimation method changed to:', message.method);
-    
-    // Wait a moment to ensure popup has finished saving, then reload
-    setTimeout(() => {
-      reloadLogsFromStorage().then(() => {
-        // Update the notification with the new calculations
-        updateUsageNotification();
-        console.log('Content script: Notification updated with new estimation method');
-      });
-    }, 100);
-    
-    sendResponse({ success: true });
-    return true;
   }
 });
   } catch (e) {
@@ -812,24 +774,7 @@ if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage)
 }
 
 
-/**
- * Calculates energy usage and CO2 emissions based on selected methodology
- *
- * NOTE: This function is now imported from energy-calculator.js (shared module)
- * The implementation is in energy-calculator.js to eliminate code duplication
- * See: energy-calculator.js for the complete implementation
- *
- * This implements either:
- * 1. EcoLogits methodology (community estimates) from https://ecologits.ai/0.2/methodology/llm_inference/
- * 2. Sam Altman's estimation (0.34 Wh per query, scaled by tokens)
- *
- * @param {number} outputTokens - Number of tokens in the assistant's response
- * @param {string} method - 'community' or 'altman'
- * @returns {Object} Energy usage and emissions data
- *
- * The function is imported at the top of this file and used directly.
- */
-// calculateEnergyAndEmissions is now imported from energy-calculator.js
+// calculateEnergyAndEmissions is imported from energy-calculator.js (loaded via manifest.json)
 
 /**
  * Validates and repairs storage if needed

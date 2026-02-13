@@ -57,8 +57,8 @@ document.addEventListener('DOMContentLoaded', function() {
       switchTab('today');
     });
 
-    // Set up estimation method toggle
-    setupEstimationMethodToggle();
+    // Recalculate all logs on load to ensure they use the current formula
+    recalculateAllLogs();
 
     // Add resize observer to adjust popup size based on content
     adjustPopupHeight();
@@ -277,7 +277,9 @@ function updateTodayStats(logs) {
   
   // Update the UI
   document.getElementById('today-messages').textContent = formatNumber(todayMessages);
-  document.getElementById('today-energy').textContent = formatNumber(todayEnergyUsage.toFixed(2), true);
+  const todayEnergy = formatEnergy(todayEnergyUsage);
+  document.getElementById('today-energy').textContent = formatNumber(todayEnergy.value);
+  document.getElementById('today-energy-unit').textContent = todayEnergy.unit + ' used';
   
   // Calculate and update today's environmental equivalents
   const equivalents = calculateEnvironmentalEquivalents(todayEnergyUsage);
@@ -364,7 +366,9 @@ function updateLifetimeStats(logs) {
   
   // Update the UI
   document.getElementById('lifetime-messages').textContent = formatNumber(totalMessages);
-  document.getElementById('lifetime-energy').textContent = formatNumber(totalEnergyUsage.toFixed(2), true);
+  const lifetimeEnergy = formatEnergy(totalEnergyUsage);
+  document.getElementById('lifetime-energy').textContent = formatNumber(lifetimeEnergy.value);
+  document.getElementById('lifetime-energy-unit').textContent = lifetimeEnergy.unit + ' used';
   
   // Calculate and update lifetime environmental equivalents
   const equivalents = calculateEnvironmentalEquivalents(totalEnergyUsage);
@@ -472,10 +476,11 @@ function updateGlobalScaleComparison(logs, totalEnergyUsage) {
       // Format the message with bold highlights
       let formattedMessage = comparison.message;
 
-      // Make the daily average bold
+      // Make the daily average bold (the message from global-scale.js uses Wh)
+      const dailyFormatted = formatEnergy(dailyAverageWh);
       formattedMessage = formattedMessage.replace(
         `${dailyAverageWh.toFixed(2)} Wh`,
-        `<strong>${dailyAverageWh.toFixed(2)} Wh</strong>`
+        `<strong>${dailyFormatted.value} ${dailyFormatted.unit}</strong>`
       );
 
       // Make the global consumption bold
@@ -561,162 +566,55 @@ function calculateEnvironmentalEquivalents(energyUsageWh) {
 
 /**
  * Formats numbers with commas for better readability
- * For watt-hour values over 1000, uses k format (e.g., 1.4k)
  * @param {number} num - Number to format
- * @param {boolean} isEnergy - Whether this is an energy value (Wh)
  * @returns {string} Formatted number string
  */
-function formatNumber(num, isEnergy = false) {
-  // Parse the number to ensure we're working with a number
+function formatNumber(num) {
   const value = parseFloat(num);
-  
-  // For energy values (Wh) over 1000, use k format
-  if (isEnergy && value >= 1000) {
-    return (value / 1000).toFixed(1) + 'k';
-  }
-  
-  // Otherwise use comma format
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 /**
- * Sets up the estimation method toggle functionality
+ * Formats energy values with adaptive units for readability.
+ * Shows mWh for small values, Wh for medium, kWh for large.
+ * @param {number} energyWh - Energy in watt-hours
+ * @returns {{value: string, unit: string}} Formatted value and unit label
  */
-function setupEstimationMethodToggle() {
-  const estimationSelect = document.getElementById('estimation-method');
-  
-  // Load saved estimation method and ensure consistency
-  loadEstimationMethod().then(method => {
-    const selectedMethod = method || 'community';
-    estimationSelect.value = selectedMethod;
-    console.log('Popup loaded with estimation method:', selectedMethod);
-  });
-  
-  // Handle estimation method change
-  estimationSelect.addEventListener('change', function() {
-    const selectedMethod = this.value;
-    console.log('Estimation method changed to:', selectedMethod);
-    
-    // Save the method first
-    saveEstimationMethod(selectedMethod);
-    
-    // Recalculate existing logs with new method and wait for completion
-    recalculateLogsInPopup(selectedMethod, () => {
-      // After recalculation is complete, notify content scripts
-      notifyEstimationMethodChange(selectedMethod);
-    });
-  });
-}
-
-/**
- * Loads the saved estimation method from storage
- */
-function loadEstimationMethod() {
-  return new Promise((resolve) => {
-    const storage = getChromeStorage();
-    if (storage) {
-      storage.get(['estimationMethod'], function(result) {
-        const method = result.estimationMethod || 'community';
-        console.log('Loaded estimation method from storage:', method);
-        resolve(method);
-      });
-    } else {
-      console.log('No storage available, defaulting to community');
-      resolve('community');
-    }
-  });
-}
-
-/**
- * Saves the estimation method to storage
- */
-function saveEstimationMethod(method) {
-  const storage = getChromeStorage();
-  if (storage) {
-    storage.set({ estimationMethod: method }, function() {
-      console.log('Popup: Estimation method saved to storage:', method);
-    });
+function formatEnergy(energyWh) {
+  const val = parseFloat(energyWh) || 0;
+  if (val >= 1000) {
+    return { value: (val / 1000).toFixed(1), unit: 'kWh' };
+  } else if (val >= 1) {
+    return { value: val.toFixed(2), unit: 'Wh' };
   } else {
-    console.error('Popup: Cannot save estimation method - no storage available');
+    return { value: (val * 1000).toFixed(1), unit: 'mWh' };
   }
 }
 
 /**
- * Recalculates all logs with the new estimation method in the popup
+ * Recalculates all stored logs with the current formula.
+ * Called on popup load to ensure stored energy values match the current methodology.
  */
-function recalculateLogsInPopup(method, callback) {
+function recalculateAllLogs() {
   const storage = getChromeStorage();
-  if (!storage) {
-    if (callback) callback();
-    return;
-  }
-  
+  if (!storage) return;
+
   storage.get(['chatgptLogs'], function(result) {
     const logs = result.chatgptLogs || [];
-    
-    // Recalculate energy for all logs
+
     logs.forEach(log => {
       if (log.assistantTokenCount > 0) {
-        const energyData = calculateEnergyAndEmissions(log.assistantTokenCount, method);
+        const energyData = calculateEnergyAndEmissions(log.assistantTokenCount);
         log.energyUsage = energyData.totalEnergy;
         log.co2Emissions = energyData.co2Emissions;
       }
     });
-    
-    // Save updated logs back to storage
+
     storage.set({ chatgptLogs: logs }, function() {
-      // Update the UI with recalculated data
       updateTodayStats(logs);
       updateLifetimeStats(logs);
-      console.log(`Recalculated ${logs.length} logs with ${method} method`);
-      
-      // Call the callback when everything is complete
-      if (callback) callback();
+      console.log(`Recalculated ${logs.length} logs with EcoLogits v0.9.x methodology`);
     });
   });
-}
-
-/**
- * Energy calculation function is now imported from energy-calculator.js
- *
- * ✅ RESOLVED: Issue #14 - Code duplication has been eliminated
- * The energy calculation logic now lives in energy-calculator.js (shared module)
- * and is imported by both content.js and popup.js.
- *
- * This implements the EcoLogits methodology from:
- * https://ecologits.ai/0.2/methodology/llm_inference/
- *
- * See: energy-calculator.js for the complete implementation
- */
-// calculateEnergyAndEmissions is imported from energy-calculator.js at the top of this file
-
-/**
- * Notifies content script about estimation method change
- */
-function notifyEstimationMethodChange(method) {
-  // Send message to all ChatGPT tabs to update their method for new calculations
-  if (chrome.tabs) {
-    chrome.tabs.query({ url: "https://chatgpt.com/*" }, function(tabs) {
-      if (tabs.length === 0) {
-        console.log('No ChatGPT tabs found - estimation method will apply to future tabs');
-        return;
-      }
-      
-      tabs.forEach(tab => {
-        chrome.tabs.sendMessage(tab.id, {
-          type: 'estimationMethodChanged',
-          method: method
-        }, function(response) {
-          // Check for runtime errors and handle them gracefully
-          if (chrome.runtime.lastError) {
-            console.log(`Could not notify tab ${tab.id}: ${chrome.runtime.lastError.message}`);
-            // This is normal - tab might not have the content script loaded yet
-          } else {
-            console.log(`Successfully notified tab ${tab.id} of estimation method change`);
-          }
-        });
-      });
-    });
-  }
 }
 
