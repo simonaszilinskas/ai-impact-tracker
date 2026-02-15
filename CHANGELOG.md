@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release with basic energy tracking
 - Support for ChatGPT (chatgpt.com)
-- Dual estimation methods (Community estimates vs Sam Altman's estimation)
+- EcoLogits-based energy estimation methodology
 - Environmental equivalents:
   - YouTube streaming time
   - Water consumption (replaced in v2.1)

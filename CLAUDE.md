@@ -34,9 +34,9 @@ Each file checks its environment (`typeof window`, `typeof module`) to export ap
 
 ### Core Files
 
-- **energy-calculator.js** — Shared energy/emissions calculation module implementing EcoLogits methodology. Two estimation methods: `community` (academic research) and `altman` (Sam Altman's estimate). All constants (GPT-5 model params, EcoLogits coefficients) live here.
+- **energy-calculator.js** — Shared energy/emissions calculation module implementing EcoLogits v0.9.x methodology. All constants (GPT-5 model params, EcoLogits coefficients) live here.
 - **content.js** — Content script injected into ChatGPT pages. Intercepts fetch requests (SSE streams), observes DOM mutations, extracts user/assistant messages, calculates energy per exchange, persists to `chrome.storage.local`.
-- **popup.js** — Popup UI logic. Reads logs from storage, displays today/lifetime stats, handles estimation method switching (recalculates all stored logs when method changes), shows environmental equivalents.
+- **popup.js** — Popup UI logic. Reads logs from storage, displays today/lifetime stats, recalculates stored logs on load to match current methodology, shows environmental equivalents.
 - **global-scale.js** — Scales user's daily average to world population and compares against reference dataset of countries/cities/continents annual energy consumption.
 - **background.js** — Minimal service worker handling install/update lifecycle and storage initialization.
 - **popup.html** — Popup UI markup.
@@ -47,8 +47,7 @@ Each file checks its environment (`typeof window`, `typeof module`) to export ap
 2. Token count estimated as `Math.ceil(text.length / 4)`
 3. `calculateEnergyAndEmissions()` from `energy-calculator.js` computes Wh and CO2
 4. Logs stored in `chrome.storage.local` under key `chatgptLogs`
-5. `popup.js` reads logs from storage, computes equivalents, and renders stats
-6. When estimation method changes in popup, all logs are recalculated and content script is notified via `chrome.runtime.sendMessage`
+5. `popup.js` reads logs from storage, recalculates with current formula, computes equivalents, and renders stats
 
 ### Chrome Extension Permissions
 
@@ -57,4 +56,4 @@ Each file checks its environment (`typeof window`, `typeof module`) to export ap
 
 ## Key Constants
 
-Energy calculation uses EcoLogits methodology constants in `energy-calculator.js`. The model is configured for GPT-5 (300B total params, 60B active params MoE). Two estimation methods produce ~77x difference in energy values.
+Energy calculation uses EcoLogits v0.9.x methodology constants in `energy-calculator.js`. The model is configured for GPT-5 (300B total params, 60B active params MoE). Uses H100 GPUs, batch size 64, and USA electricity mix emission factor.

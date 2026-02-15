@@ -20,7 +20,7 @@ A browser extension (for now only Chrome) that estimates the environmental impac
 ## Features
 
 - **Real-time Energy Tracking**: Monitors your ChatGPT conversations and calculates energy consumption
-- **Dual Estimation Methods**: Choose between community estimates (research-based) or Sam Altman's estimation
+- **EcoLogits v0.9.x Methodology**: Energy estimates based on academic research (EcoLogits methodology)
 - **Relatable Equivalents**: Understand your impact through everyday comparisons:
   - 📺 YouTube streaming time
   - 💡 60W light bulb runtime

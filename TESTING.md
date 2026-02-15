@@ -26,16 +26,14 @@ node verify-fix.js
 **Expected Output:**
 ```
 ======================================================================
-VERIFICATION: Issue #13 - popup.js Energy Calculation Fix
+VERIFICATION: Issue #13 - Energy Calculation Fix
 ======================================================================
 
-Testing Community Estimates (EcoLogits methodology)
+Testing EcoLogits v0.9.x methodology
 ----------------------------------------------------------------------
 Test 1: 10 tokens
-  ❌ Old buggy:    0.0760 Wh
-  ✅ Corrected:    0.4145 Wh
-  📊 Error factor: 5.46x (446% underestimation in old version)
-  🎯 Expected:     0.40 - 0.50 Wh
+  New v0.9.x:      0.0243 Wh
+  Expected:        0.023 - 0.026 Wh
   ✅ PASS
 
 [... more tests ...]
@@ -129,25 +127,24 @@ This tests that the shared module works in the content script context.
    - ✅ Shows "⚡️ X.XX Wh consumed today"
    - ✅ Can drag the notification to move it
 
-   Example: "⚡️ 3.32 Wh consumed today"
+   Example: "⚡️ 243 mWh consumed today"
 
 6. **Check Console for Calculation Logs**
-   - Should see: `"[Time] Updating energy notification: 3.32 Wh"`
+   - Should see: `"[Time] Updating energy notification: 243 mWh"`
    - Energy value should be reasonable:
-     - Short response (~50 tokens): 1.6-1.7 Wh
-     - Medium response (~100 tokens): 3.3-3.4 Wh
-     - Long response (~500 tokens): 16-17 Wh
+     - Short response (~50 tokens): ~120 mWh
+     - Medium response (~100 tokens): ~243 mWh
+     - Long response (~500 tokens): ~1.2 Wh
 
 7. **Verify Calculation is Correct**
    - Generate another response
    - Note the energy value
-   - It should be ~3.3 Wh per 100 tokens of response
-   - Calculate: response_length_chars / 4 = tokens, tokens * 0.033 ≈ Wh
+   - It should be ~0.24 Wh (~243 mWh) per 100 tokens of response
 
 **✅ PASS Criteria for Content Script:**
 - No errors in console
 - Notification appears and shows energy
-- Energy values are reasonable (~3.3 Wh for 100 tokens)
+- Energy values are reasonable (~0.24 Wh for 100 tokens)
 - Notification is draggable
 
 ### Step 2.3: Test Popup (popup.js)
@@ -198,59 +195,7 @@ This tests that the shared module works as an ES6 module in the popup.
 - Energy values are reasonable
 - Values match what content script shows
 
-### Step 2.4: Test Estimation Method Switching
-
-This is the critical test for issue #13 - verifying recalculation works correctly.
-
-1. **Note Current Values**
-   - Open extension popup
-   - Note the "Today" energy value
-   - Example: "42.50 Wh"
-
-2. **Check Current Method**
-   - Look at bottom of popup
-   - Should see "Estimation method:" dropdown
-   - Note current selection (probably "Community estimates")
-
-3. **Switch to Altman Method**
-   - Click dropdown
-   - Select "Sam Altman's estimation"
-   - Watch the values change
-
-4. **Verify Recalculation**
-   - Energy value should DROP by ~77x
-   - Example: 33.2 Wh → ~0.43 Wh
-   - All environmental equivalents should also drop
-   - Check console for: `"Recalculated X logs with altman method"`
-   - ✅ NO errors should appear
-
-5. **Switch Back to Community Method**
-   - Click dropdown again
-   - Select "Community estimates (academic research)"
-   - Watch values change back
-
-6. **Verify Values Return**
-   - Energy value should RETURN to original (±0.1 Wh)
-   - Example: 0.43 Wh → 33.2 Wh
-   - ✅ Should be approximately the same as step 1
-   - Check console for: `"Recalculated X logs with community method"`
-
-7. **Switch Multiple Times**
-   - Switch back and forth 3-4 times
-   - Each time:
-     - ✅ Values should change smoothly
-     - ✅ No errors in console
-     - ✅ Values should be consistent
-     - ❌ Should NOT freeze or crash
-
-**✅ PASS Criteria for Method Switching:**
-- Switching works without errors
-- Community method: ~3.3 Wh per 100 tokens
-- Altman method: ~0.04 Wh per 100 tokens (~77x lower)
-- Values are consistent when switching back
-- No console errors during recalculation
-
-### Step 2.5: Test Module Loading (Advanced)
+### Step 2.4: Test Module Loading (Advanced)
 
 This verifies the shared module loaded correctly in both contexts.
 
@@ -386,18 +331,6 @@ Make sure we didn't break anything existing.
 2. Verify energy-calculator.js has export statements
 3. Hard reload extension
 
-### Issue: Values Don't Change When Switching Methods
-
-**Symptoms:**
-- Clicking dropdown does nothing
-- Values stay the same
-
-**Solutions:**
-1. Check browser console for errors
-2. Verify popup.js uses calculateEnergyAndEmissions (not old function)
-3. Check recalculateLogsInPopup() calls correct function
-4. Clear extension storage and retry
-
 ---
 
 ## Expected Test Results Summary
@@ -408,12 +341,9 @@ Make sure we didn't break anything existing.
 | test-refactoring.js | All tests pass | ⬜ |
 | Extension loads | No errors | ⬜ |
 | Content script works | Notification appears | ⬜ |
-| Energy values correct | ~3.3 Wh per 100 tokens | ⬜ |
+| Energy values correct | ~0.24 Wh per 100 tokens | ⬜ |
 | Popup opens | No errors | ⬜ |
 | Popup shows data | Displays correctly | ⬜ |
-| Method switching | Values change correctly | ⬜ |
-| Community → Altman | Values drop ~77x | ⬜ |
-| Altman → Community | Values return | ⬜ |
 | Storage persists | Data remembered | ⬜ |
 | No console errors | Clean console | ⬜ |
 
@@ -422,9 +352,8 @@ Make sure we didn't break anything existing.
 ## Success Criteria
 
 ✅ **Issue #13 Fixed** if:
-- Energy values are ~3.32 Wh per 100 tokens (using GPT-5 params)
-- Method switching works correctly
-- Recalculation produces correct values
+- Energy values are ~0.24 Wh per 100 tokens (using EcoLogits v0.9.x)
+- Recalculation on popup load produces correct values
 
 ✅ **Issue #14 Resolved** if:
 - Both content script and popup work
@@ -449,9 +378,8 @@ Use this for rapid testing:
 □ Run test-refactoring.js → All pass
 □ Load extension → No errors
 □ Visit ChatGPT → Notification appears
-□ Check energy value → ~3.3 Wh per 100 tokens
+□ Check energy value → ~0.24 Wh per 100 tokens
 □ Open popup → Displays correctly
-□ Switch methods → Values change
 □ Check console → No errors
 □ Refresh page → Still works
 ```
