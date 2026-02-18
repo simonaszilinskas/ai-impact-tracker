@@ -37,7 +37,7 @@ Each file checks its environment (`typeof window`, `typeof module`) to export ap
 - **energy-calculator.js** — Shared energy/emissions calculation module implementing EcoLogits v0.9.x methodology. All constants (GPT-5 model params, EcoLogits coefficients) live here.
 - **content.js** — Content script injected into ChatGPT pages. Intercepts fetch requests (SSE streams), observes DOM mutations, extracts user/assistant messages, calculates energy per exchange, persists to `chrome.storage.local`.
 - **popup.js** — Popup UI logic. Reads logs from storage, displays today/lifetime stats, recalculates stored logs on load to match current methodology, shows environmental equivalents.
-- **global-scale.js** — Scales user's daily average to world population and compares against reference dataset of countries/cities/continents annual energy consumption.
+- **global-scale.js** — Scales user's daily average to 900M ChatGPT WAU and compares against reference dataset of countries/cities/continents annual electricity consumption.
 - **background.js** — Minimal service worker handling install/update lifecycle and storage initialization.
 - **popup.html** — Popup UI markup.
 

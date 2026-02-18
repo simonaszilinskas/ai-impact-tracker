@@ -453,7 +453,7 @@ function updateGlobalScaleComparison(logs, totalEnergyUsage) {
 
   // Calculate daily average energy usage
   if (logs.length === 0 || totalEnergyUsage <= 0) {
-    messageElement.innerHTML = 'Start using ChatGPT to see your global impact!';
+    messageElement.innerHTML = 'Start using ChatGPT to see your impact at scale!';
     return;
   }
 

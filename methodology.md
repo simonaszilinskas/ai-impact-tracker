@@ -122,32 +122,33 @@ To provide context for the energy consumed by AI interactions, the tool converts
 **Source data**:
 Derived from "active energy per 100 runs" benchmarks for VFAC PM-driven elevators (April 2017 Elevator World article - https://elevatorworld.com/article/lift-energy-consumption-comparative-reporting/)
 
-## Global Scale Perspective
+## ChatGPT-Scale Perspective
 
-**New Feature**: The extension now provides a global scale perspective to help visualize what your personal AI usage would mean if everyone in the world consumed the same amount.
+The extension provides a scale perspective to help visualize what your personal AI usage would mean if all ChatGPT users consumed the same amount.
 
 ### Methodology
 
-The global scale comparison calculates hypothetical worldwide energy consumption based on your daily average usage:
+The scale comparison calculates hypothetical total electricity consumption across all ChatGPT users based on your daily average usage:
 
 ```
 dailyAverage = totalLifetimeEnergy / numberOfDaysTracked
-globalAnnualConsumption = dailyAverage × worldPopulation × 365 days
+annualConsumption = dailyAverage × chatGptWAU × 365 days
 ```
 
 Where:
-* **worldPopulation** = 8.2 billion people (2025 estimate)
+* **chatGptWAU** = 900 million weekly active users (2025 estimate)
 * **numberOfDaysTracked** = Days between your first and last tracked conversation
-* **globalAnnualConsumption** = Result in TWh (Terawatt-hours) per year
+* **annualConsumption** = Result in TWh (Terawatt-hours) per year
 
 ### Geographic Comparisons
 
-The calculated global consumption is then compared against the annual energy consumption of real geographic entities:
+The calculated consumption is then compared against the annual electricity consumption of real geographic entities:
 
 **Reference data includes**:
-* **Small nations**: Malta (2.3 TWh/year), Luxembourg (5.87 TWh/year), Iceland (19.6 TWh/year)
+* **Cities**: Boston (12.3 TWh/year), Paris (16 TWh/year), London (40 TWh/year), Tokyo (48 TWh/year)
+* **Small nations**: Malta (2.3 TWh/year), Luxembourg (6.4 TWh/year), Iceland (19.6 TWh/year)
 * **Medium countries**: Singapore (55 TWh/year), Portugal (50 TWh/year), Austria (72 TWh/year)
-* **Large countries**: Germany (510 TWh/year), Japan (939 TWh/year), India (1,463 TWh/year), United States (4,065 TWh/year), China (8,539 TWh/year)
+* **Large countries**: Germany (510 TWh/year), Japan (939 TWh/year), India (1,600 TWh/year), United States (4,065 TWh/year), China (8,539 TWh/year)
 * **Continents**: Africa (870 TWh/year), Europe (3,400 TWh/year), Asia (13,500 TWh/year)
 
 **Comparison algorithm**:
@@ -160,36 +161,38 @@ The calculated global consumption is then compared against the annual energy con
 * Automatically selects the most appropriate entity for context
 
 **Data sources**:
-* International Energy Agency (IEA) - 2024 electricity consumption data
+* International Energy Agency (IEA) - 2023-2024 electricity consumption data
 * Enerdata - World Energy Statistics 2024
-* Our World in Data - Energy consumption by country
+* Our World in Data - Electricity consumption by country
 * U.S. Energy Information Administration (EIA) - City-level consumption
+* Municipal energy reports for international cities
 
 ### Display Format
 
-The global scale message appears in the "Lifetime" tab and follows this format:
+The scale message appears in the "Lifetime" tab and follows this format:
 
-> "You consume **X Wh** per day on average. If everyone in the world consumed as much per day, in a year it would represent **Y TWh** — **Z×** more/less than **[Entity]**'s annual energy consumption (**W TWh**)."
+> "You consume **X Wh** per day on average. If all 900M ChatGPT users consumed as much per day, in a year it would represent **Y TWh** — **Z×** more/less than **[Entity]**'s annual electricity consumption (**W TWh**)."
 
 **Examples**:
-> "You consume **42.5 Wh** per day on average. If everyone in the world consumed as much per day, in a year it would represent **127.2 TWh** — **2.3×** more than **Singapore**'s annual energy consumption (55 TWh)."
+> "You consume **42.5 Wh** per day on average. If all 900M ChatGPT users consumed as much per day, in a year it would represent **14.0 TWh** — **about the same as Denver**'s annual electricity consumption (13.1 TWh)."
 
-> "You consume **200 Wh** per day on average. If everyone in the world consumed as much per day, in a year it would represent **598.6 TWh** — **about the same as South Korea**'s annual energy consumption (607 TWh)."
+> "You consume **200 Wh** per day on average. If all 900M ChatGPT users consumed as much per day, in a year it would represent **65.7 TWh** — **1.1× more than Switzerland**'s annual electricity consumption (58.0 TWh)."
 
-> "You consume **1000 Wh** per day on average. If everyone in the world consumed as much per day, in a year it would represent **2993 TWh** — **88% of Europe**'s annual energy consumption (3,400 TWh)."
+> "You consume **1000 Wh** per day on average. If all 900M ChatGPT users consumed as much per day, in a year it would represent **328.5 TWh** — **1.1× more than United Kingdom**'s annual electricity consumption (305.0 TWh)."
 
 ### Why This Matters
 
-The global scale perspective helps answer the question: *"What if everyone used AI like I do?"*
+The ChatGPT-scale perspective helps answer the question: *"What if all ChatGPT users used AI like I do?"*
 
-* **Contextualizes individual impact**: Your personal usage might seem small, but scaled globally it becomes significant
-* **Encourages mindful usage**: Understanding potential global impact can inform more conscious AI interaction patterns
+* **Contextualizes individual impact**: Your personal usage might seem small, but scaled to 900M users it becomes significant
+* **Encourages mindful usage**: Understanding potential collective impact can inform more conscious AI interaction patterns
 * **Provides tangible comparisons**: Comparing to countries/cities makes abstract TWh numbers relatable
-* **Highlights scaling concerns**: As AI adoption grows, understanding these projections becomes increasingly important
+* **Grounded in real adoption**: Uses actual estimated ChatGPT user count rather than world population
 
 **Important notes**:
 * This is a hypothetical calculation for perspective, not a prediction
-* Actual global AI energy consumption depends on many factors (adoption rates, efficiency improvements, etc.)
+* Based on estimated 900M weekly active ChatGPT users (2025)
+* Actual collective consumption depends on many factors (usage frequency, model used, efficiency improvements, etc.)
 * The comparison assumes uniform distribution of usage, which is not realistic but useful for illustration
 
 # Conclusion

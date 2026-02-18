@@ -4,9 +4,9 @@
  */
 
 const {
-  WORLD_POPULATION,
+  CHATGPT_WAU,
   DAYS_PER_YEAR,
-  ENERGY_CONSUMPTION_REFERENCE,
+  ELECTRICITY_CONSUMPTION_REFERENCE,
   calculateGlobalAnnualConsumption,
   findClosestEntity,
   calculateComparisonRatio,
@@ -21,11 +21,11 @@ console.log();
 // Test 1: Constants
 console.log('Test 1: Constants Check');
 console.log('-'.repeat(80));
-console.log(`World Population: ${WORLD_POPULATION.toLocaleString()}`);
+console.log(`ChatGPT WAU: ${CHATGPT_WAU.toLocaleString()}`);
 console.log(`Days Per Year: ${DAYS_PER_YEAR}`);
-console.log(`Reference Entities: ${ENERGY_CONSUMPTION_REFERENCE.length} entities loaded`);
-console.log(`Smallest entity: ${ENERGY_CONSUMPTION_REFERENCE[0].name} (${ENERGY_CONSUMPTION_REFERENCE[0].consumption} TWh)`);
-console.log(`Largest entity: ${ENERGY_CONSUMPTION_REFERENCE[ENERGY_CONSUMPTION_REFERENCE.length - 1].name} (${ENERGY_CONSUMPTION_REFERENCE[ENERGY_CONSUMPTION_REFERENCE.length - 1].consumption} TWh)`);
+console.log(`Reference Entities: ${ELECTRICITY_CONSUMPTION_REFERENCE.length} entities loaded`);
+console.log(`Smallest entity: ${ELECTRICITY_CONSUMPTION_REFERENCE[0].name} (${ELECTRICITY_CONSUMPTION_REFERENCE[0].consumption} TWh)`);
+console.log(`Largest entity: ${ELECTRICITY_CONSUMPTION_REFERENCE[ELECTRICITY_CONSUMPTION_REFERENCE.length - 1].name} (${ELECTRICITY_CONSUMPTION_REFERENCE[ELECTRICITY_CONSUMPTION_REFERENCE.length - 1].consumption} TWh)`);
 console.log('✓ Constants loaded correctly\n');
 
 // Test 2: calculateGlobalAnnualConsumption
@@ -143,15 +143,15 @@ console.log('-'.repeat(80));
 let validationErrors = 0;
 
 // Check that reference data is sorted
-for (let i = 1; i < ENERGY_CONSUMPTION_REFERENCE.length; i++) {
-  if (ENERGY_CONSUMPTION_REFERENCE[i].consumption < ENERGY_CONSUMPTION_REFERENCE[i - 1].consumption) {
-    console.error(`✗ Data not sorted: ${ENERGY_CONSUMPTION_REFERENCE[i - 1].name} (${ENERGY_CONSUMPTION_REFERENCE[i - 1].consumption}) comes before ${ENERGY_CONSUMPTION_REFERENCE[i].name} (${ENERGY_CONSUMPTION_REFERENCE[i].consumption})`);
+for (let i = 1; i < ELECTRICITY_CONSUMPTION_REFERENCE.length; i++) {
+  if (ELECTRICITY_CONSUMPTION_REFERENCE[i].consumption < ELECTRICITY_CONSUMPTION_REFERENCE[i - 1].consumption) {
+    console.error(`✗ Data not sorted: ${ELECTRICITY_CONSUMPTION_REFERENCE[i - 1].name} (${ELECTRICITY_CONSUMPTION_REFERENCE[i - 1].consumption}) comes before ${ELECTRICITY_CONSUMPTION_REFERENCE[i].name} (${ELECTRICITY_CONSUMPTION_REFERENCE[i].consumption})`);
     validationErrors++;
   }
 }
 
 // Check that all entities have required fields
-ENERGY_CONSUMPTION_REFERENCE.forEach(entity => {
+ELECTRICITY_CONSUMPTION_REFERENCE.forEach(entity => {
   if (!entity.name || !entity.type || !entity.consumption || !entity.population) {
     console.error(`✗ Entity missing required fields:`, entity);
     validationErrors++;
@@ -159,7 +159,7 @@ ENERGY_CONSUMPTION_REFERENCE.forEach(entity => {
 });
 
 // Check that consumption values are positive
-ENERGY_CONSUMPTION_REFERENCE.forEach(entity => {
+ELECTRICITY_CONSUMPTION_REFERENCE.forEach(entity => {
   if (entity.consumption <= 0) {
     console.error(`✗ Entity ${entity.name} has invalid consumption: ${entity.consumption}`);
     validationErrors++;
@@ -168,7 +168,7 @@ ENERGY_CONSUMPTION_REFERENCE.forEach(entity => {
 
 if (validationErrors === 0) {
   console.log('✓ All data validation checks passed');
-  console.log(`  - ${ENERGY_CONSUMPTION_REFERENCE.length} entities validated`);
+  console.log(`  - ${ELECTRICITY_CONSUMPTION_REFERENCE.length} entities validated`);
   console.log(`  - All entities properly sorted by consumption`);
   console.log(`  - All required fields present`);
   console.log(`  - All consumption values positive`);

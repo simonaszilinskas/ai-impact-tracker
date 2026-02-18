@@ -3,19 +3,19 @@
  * ===================================================
  *
  * This module provides functionality to contextualize individual AI usage
- * at a global scale by comparing what would happen if everyone in the world
+ * at a global scale by comparing what would happen if all ChatGPT users
  * consumed the same amount of energy.
  *
- * Formula: User's daily average × 8.2 billion people × 365 days
- * Result: Compared against annual energy consumption of cities, countries, and continents
+ * Formula: User's daily average × 900 million ChatGPT WAU × 365 days
+ * Result: Compared against annual electricity consumption of cities, countries, and continents
  *
  * @module global-scale
  */
 
 /**
- * World population for scaling calculations (2025 estimate)
+ * Estimated ChatGPT weekly active users (WAU) for scaling calculations (2025 estimate)
  */
-const WORLD_POPULATION = 8.2e9; // 8.2 billion people
+const CHATGPT_WAU = 900e6; // 900 million weekly active users
 
 /**
  * Days in a year for annual calculations
@@ -23,26 +23,29 @@ const WORLD_POPULATION = 8.2e9; // 8.2 billion people
 const DAYS_PER_YEAR = 365;
 
 /**
- * Reference dataset of geographical entities and their annual energy consumption
+ * Reference dataset of geographical entities and their annual electricity consumption
  * All values in TWh (Terawatt-hours) per year
  *
  * Sources:
- * - Countries: IEA, Enerdata, Our World in Data (2024 data)
- * - Cities: EIA, local utility data
+ * - Countries: IEA, Enerdata, Our World in Data (2023-2024 data)
+ * - Cities: EIA, local utility data, municipal energy reports
  * - Continents: World Bank, IEA aggregated data
  *
  * Sorted from smallest to largest for efficient comparison
  */
-const ENERGY_CONSUMPTION_REFERENCE = [
+const ELECTRICITY_CONSUMPTION_REFERENCE = [
   // Small island nations and city-states
   { name: "Malta", type: "country", consumption: 2.3, population: "0.5 million" },
-  { name: "Luxembourg", type: "country", consumption: 5.87, population: "0.6 million" },
+  { name: "Luxembourg", type: "country", consumption: 6.4, population: "0.6 million" },
   { name: "Boston", type: "city", consumption: 12.3, population: "0.7 million" },
   { name: "Denver", type: "city", consumption: 13.1, population: "0.7 million" },
+  { name: "Paris", type: "city", consumption: 16, population: "2.1 million" },
   { name: "Iceland", type: "country", consumption: 19.6, population: "0.4 million" },
   { name: "Ireland", type: "country", consumption: 31, population: "5.1 million" },
   { name: "Denmark", type: "country", consumption: 33, population: "5.9 million" },
+  { name: "London", type: "city", consumption: 40, population: "9 million" },
   { name: "New Zealand", type: "country", consumption: 42, population: "5.1 million" },
+  { name: "Tokyo", type: "city", consumption: 48, population: "14 million" },
   { name: "Portugal", type: "country", consumption: 50, population: "10.3 million" },
   { name: "Greece", type: "country", consumption: 53, population: "10.4 million" },
   { name: "Singapore", type: "country", consumption: 55, population: "5.9 million" },
@@ -52,8 +55,8 @@ const ENERGY_CONSUMPTION_REFERENCE = [
   { name: "Belgium", type: "country", consumption: 85, population: "11.6 million" },
   { name: "Finland", type: "country", consumption: 85, population: "5.5 million" },
   { name: "Netherlands", type: "country", consumption: 119, population: "17.6 million" },
+  { name: "Norway", type: "country", consumption: 136, population: "5.5 million" },
   { name: "Sweden", type: "country", consumption: 140, population: "10.5 million" },
-  { name: "Norway", type: "country", consumption: 147, population: "5.5 million" },
   { name: "Poland", type: "country", consumption: 165, population: "38 million" },
   { name: "Thailand", type: "country", consumption: 202, population: "70 million" },
   { name: "Spain", type: "country", consumption: 268, population: "47.4 million" },
@@ -71,7 +74,7 @@ const ENERGY_CONSUMPTION_REFERENCE = [
   { name: "Japan", type: "country", consumption: 939, population: "125 million" },
   { name: "Russia", type: "country", consumption: 1025, population: "144 million" },
   { name: "South America", type: "continent", consumption: 1200, population: "434 million" },
-  { name: "India", type: "country", consumption: 1463, population: "1.4 billion" },
+  { name: "India", type: "country", consumption: 1600, population: "1.4 billion" },
   { name: "Europe", type: "continent", consumption: 3400, population: "748 million" },
   { name: "United States", type: "country", consumption: 4065, population: "335 million" },
   { name: "North America", type: "continent", consumption: 4900, population: "580 million" },
@@ -80,16 +83,16 @@ const ENERGY_CONSUMPTION_REFERENCE = [
 ];
 
 /**
- * Calculates what the global energy consumption would be if everyone
- * consumed the same amount of AI energy as the user
+ * Calculates what the total electricity consumption would be if all
+ * ChatGPT users consumed the same amount as this user
  *
  * @param {number} dailyAverageWh - User's daily average energy consumption in Wh
- * @returns {number} Annual global consumption in TWh
+ * @returns {number} Annual consumption across all ChatGPT users in TWh
  */
 function calculateGlobalAnnualConsumption(dailyAverageWh) {
-  // Convert Wh to TWh and scale to global population and annual timeframe
-  // Formula: (Wh/day) × (8.2B people) × (365 days/year) × (1 TWh / 1e12 Wh)
-  const globalAnnualTWh = dailyAverageWh * WORLD_POPULATION * DAYS_PER_YEAR / 1e12;
+  // Convert Wh to TWh and scale to all ChatGPT users over a year
+  // Formula: (Wh/day) × (900M users) × (365 days/year) × (1 TWh / 1e12 Wh)
+  const globalAnnualTWh = dailyAverageWh * CHATGPT_WAU * DAYS_PER_YEAR / 1e12;
   return globalAnnualTWh;
 }
 
@@ -109,7 +112,7 @@ function findClosestEntity(globalConsumptionTWh) {
   let minDistance = Infinity;
 
   // Find entity with minimum logarithmic distance
-  for (const entity of ENERGY_CONSUMPTION_REFERENCE) {
+  for (const entity of ELECTRICITY_CONSUMPTION_REFERENCE) {
     // Use logarithmic distance for better scaling across orders of magnitude
     const distance = Math.abs(Math.log10(entity.consumption) - Math.log10(globalConsumptionTWh));
 
@@ -214,9 +217,9 @@ function getGlobalScaleComparison(dailyAverageWh) {
   // Construct the message
   const relationshipText = comparison.relationship ? ` ${comparison.relationship}` : '';
   const message = `You consume ${dailyAverageWh.toFixed(2)} Wh per day on average. ` +
-    `If everyone in the world consumed as much per day, in a year it would represent ` +
+    `If all 900M ChatGPT users consumed as much per day, in a year it would represent ` +
     `${formattedGlobalConsumption} — ${comparison.formattedRatio}${relationshipText} ` +
-    `${closestEntity.name}${closestEntity.type === 'country' ? "'s" : "'s"} annual energy consumption ` +
+    `${closestEntity.name}'s annual electricity consumption ` +
     `(${closestEntity.consumption.toFixed(1)} TWh).`;
 
   return {
@@ -241,9 +244,9 @@ function getGlobalScaleComparison(dailyAverageWh) {
 
 // Make functions available globally for browser context
 if (typeof window !== 'undefined') {
-  window.WORLD_POPULATION = WORLD_POPULATION;
+  window.CHATGPT_WAU = CHATGPT_WAU;
   window.DAYS_PER_YEAR = DAYS_PER_YEAR;
-  window.ENERGY_CONSUMPTION_REFERENCE = ENERGY_CONSUMPTION_REFERENCE;
+  window.ELECTRICITY_CONSUMPTION_REFERENCE = ELECTRICITY_CONSUMPTION_REFERENCE;
   window.calculateGlobalAnnualConsumption = calculateGlobalAnnualConsumption;
   window.findClosestEntity = findClosestEntity;
   window.calculateComparisonRatio = calculateComparisonRatio;
@@ -253,9 +256,9 @@ if (typeof window !== 'undefined') {
 // CommonJS exports for Node.js testing
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    WORLD_POPULATION,
+    CHATGPT_WAU,
     DAYS_PER_YEAR,
-    ENERGY_CONSUMPTION_REFERENCE,
+    ELECTRICITY_CONSUMPTION_REFERENCE,
     calculateGlobalAnnualConsumption,
     findClosestEntity,
     calculateComparisonRatio,
