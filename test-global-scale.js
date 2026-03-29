@@ -4,7 +4,7 @@
  */
 
 const {
-  CHATGPT_WAU,
+  AI_CHAT_WAU,
   DAYS_PER_YEAR,
   ELECTRICITY_CONSUMPTION_REFERENCE,
   calculateGlobalAnnualConsumption,
@@ -21,7 +21,7 @@ console.log();
 // Test 1: Constants
 console.log('Test 1: Constants Check');
 console.log('-'.repeat(80));
-console.log(`ChatGPT WAU: ${CHATGPT_WAU.toLocaleString()}`);
+console.log(`AI Chat WAU: ${AI_CHAT_WAU.toLocaleString()}`);
 console.log(`Days Per Year: ${DAYS_PER_YEAR}`);
 console.log(`Reference Entities: ${ELECTRICITY_CONSUMPTION_REFERENCE.length} entities loaded`);
 console.log(`Smallest entity: ${ELECTRICITY_CONSUMPTION_REFERENCE[0].name} (${ELECTRICITY_CONSUMPTION_REFERENCE[0].consumption} TWh)`);

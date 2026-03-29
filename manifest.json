@@ -4,7 +4,11 @@
     "version": "2.4",
     "description": "Track the environmental impact of your AI usage with relatable equivalents",
     "permissions": ["storage"],
-    "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+    "host_permissions": [
+      "https://chatgpt.com/*",
+      "https://chat.openai.com/*",
+      "https://claude.ai/*"
+    ],
     "background": {
       "service_worker": "background.js"
     },
@@ -16,8 +20,12 @@
     },
     "content_scripts": [
       {
-        "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
-        "js": ["energy-calculator.js", "content.js"],
+        "matches": [
+          "https://chatgpt.com/*",
+          "https://chat.openai.com/*",
+          "https://claude.ai/*"
+        ],
+        "js": ["providers.js", "energy-calculator.js", "content.js"],
         "run_at": "document_start"
       }
     ],

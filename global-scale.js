@@ -3,19 +3,20 @@
  * ===================================================
  *
  * This module provides functionality to contextualize individual AI usage
- * at a global scale by comparing what would happen if all ChatGPT users
+ * at a global scale by comparing what would happen if all AI chat users
  * consumed the same amount of energy.
  *
- * Formula: User's daily average × 900 million ChatGPT WAU × 365 days
+ * Formula: User's daily average × 900 million AI chat WAU × 365 days
  * Result: Compared against annual electricity consumption of cities, countries, and continents
  *
  * @module global-scale
  */
 
 /**
- * Estimated ChatGPT weekly active users (WAU) for scaling calculations (2025 estimate)
+ * Estimated AI chat weekly active users (WAU) for scaling calculations
+ * Using ChatGPT WAU as proxy (2025 estimate: 900M)
  */
-const CHATGPT_WAU = 900e6; // 900 million weekly active users
+const AI_CHAT_WAU = 900e6; // 900 million weekly active users
 
 /**
  * Days in a year for annual calculations
@@ -84,15 +85,15 @@ const ELECTRICITY_CONSUMPTION_REFERENCE = [
 
 /**
  * Calculates what the total electricity consumption would be if all
- * ChatGPT users consumed the same amount as this user
+ * AI chat users consumed the same amount as this user
  *
  * @param {number} dailyAverageWh - User's daily average energy consumption in Wh
- * @returns {number} Annual consumption across all ChatGPT users in TWh
+ * @returns {number} Annual consumption across all AI chat users in TWh
  */
 function calculateGlobalAnnualConsumption(dailyAverageWh) {
-  // Convert Wh to TWh and scale to all ChatGPT users over a year
+  // Convert Wh to TWh and scale to all AI chat users over a year
   // Formula: (Wh/day) × (900M users) × (365 days/year) × (1 TWh / 1e12 Wh)
-  const globalAnnualTWh = dailyAverageWh * CHATGPT_WAU * DAYS_PER_YEAR / 1e12;
+  const globalAnnualTWh = dailyAverageWh * AI_CHAT_WAU * DAYS_PER_YEAR / 1e12;
   return globalAnnualTWh;
 }
 
@@ -217,7 +218,7 @@ function getGlobalScaleComparison(dailyAverageWh) {
   // Construct the message
   const relationshipText = comparison.relationship ? ` ${comparison.relationship}` : '';
   const message = `You consume ${dailyAverageWh.toFixed(2)} Wh per day on average. ` +
-    `If all 900M ChatGPT users consumed as much per day, in a year it would represent ` +
+    `If all 900M AI chat users consumed as much per day, in a year it would represent ` +
     `${formattedGlobalConsumption} — ${comparison.formattedRatio}${relationshipText} ` +
     `${closestEntity.name}'s annual electricity consumption ` +
     `(${closestEntity.consumption.toFixed(1)} TWh).`;
@@ -244,7 +245,7 @@ function getGlobalScaleComparison(dailyAverageWh) {
 
 // Make functions available globally for browser context
 if (typeof window !== 'undefined') {
-  window.CHATGPT_WAU = CHATGPT_WAU;
+  window.AI_CHAT_WAU = AI_CHAT_WAU;
   window.DAYS_PER_YEAR = DAYS_PER_YEAR;
   window.ELECTRICITY_CONSUMPTION_REFERENCE = ELECTRICITY_CONSUMPTION_REFERENCE;
   window.calculateGlobalAnnualConsumption = calculateGlobalAnnualConsumption;
@@ -256,7 +257,7 @@ if (typeof window !== 'undefined') {
 // CommonJS exports for Node.js testing
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    CHATGPT_WAU,
+    AI_CHAT_WAU,
     DAYS_PER_YEAR,
     ELECTRICITY_CONSUMPTION_REFERENCE,
     calculateGlobalAnnualConsumption,

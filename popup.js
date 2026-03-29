@@ -4,8 +4,8 @@
  * This script handles the popup UI functionality including loading,
  * displaying usage logs and environmental metrics.
  *
- * Note: energy-calculator.js is loaded before this file via popup.html
- * The calculateEnergyAndEmissions() function is available from window.calculateEnergyAndEmissions
+ * Note: providers.js and energy-calculator.js are loaded before this file via popup.html
+ * The calculateEnergyAndEmissions() function and provider utilities are available from window
  */
 
 /**
@@ -158,7 +158,7 @@ function loadLogs() {
       return; // We already initialized with empty stats
     }
     
-    storage.get(['chatgptLogs', 'extensionVersion'], function(result) {
+    storage.get(['aiChatLogs', 'extensionVersion'], function(result) {
       // Check for chrome.runtime.lastError safely
       const lastError = chrome.runtime && chrome.runtime.lastError;
       if (lastError) {
@@ -171,7 +171,7 @@ function loadLogs() {
         return;
       }
       
-      const logs = result.chatgptLogs || [];
+      const logs = result.aiChatLogs || [];
       const version = result.extensionVersion || 'unknown';
       console.log(`Loaded ${logs.length} logs from storage (extension version: ${version})`);
       
@@ -184,7 +184,7 @@ function loadLogs() {
         
         // Attempt to repair storage
         chrome.storage.local.set({ 
-          chatgptLogs: [],
+          aiChatLogs: [],
           extensionVersion: chrome.runtime.getManifest().version 
         });
         return;
@@ -226,14 +226,14 @@ function tryLoadLogsAgain() {
       return; // We already initialized with empty stats
     }
     
-    storage.get('chatgptLogs', function(result) {
+    storage.get('aiChatLogs', function(result) {
       // Safely handle result
       if (!result) {
         console.warn('No result from storage in retry');
         return;
       }
       
-      const logs = Array.isArray(result.chatgptLogs) ? result.chatgptLogs : [];
+      const logs = Array.isArray(result.aiChatLogs) ? result.aiChatLogs : [];
       console.log(`Retry loaded ${logs.length} logs from storage`);
       
       updateTodayStats(logs);
@@ -453,7 +453,7 @@ function updateGlobalScaleComparison(logs, totalEnergyUsage) {
 
   // Calculate daily average energy usage
   if (logs.length === 0 || totalEnergyUsage <= 0) {
-    messageElement.innerHTML = 'Start using ChatGPT to see your impact at scale!';
+    messageElement.innerHTML = 'Start chatting to see your impact at scale!';
     return;
   }
 
@@ -599,18 +599,31 @@ function recalculateAllLogs() {
   const storage = getChromeStorage();
   if (!storage) return;
 
-  storage.get(['chatgptLogs'], function(result) {
-    const logs = result.chatgptLogs || [];
+  storage.get(['aiChatLogs'], function(result) {
+    const logs = result.aiChatLogs || [];
 
     logs.forEach(log => {
+      // Skip logs without provider (legacy logs before provider abstraction)
+      if (!log.provider) {
+        console.warn('Skipping log without provider information');
+        return;
+      }
+
       if (log.assistantTokenCount > 0) {
-        const energyData = calculateEnergyAndEmissions(log.assistantTokenCount);
+        // Get provider model params for recalculation
+        const provider = getProviderById(log.provider);
+        if (!provider) {
+          console.warn(`Unknown provider: ${log.provider}, skipping log`);
+          return;
+        }
+
+        const energyData = calculateEnergyAndEmissions(log.assistantTokenCount, provider.modelParams);
         log.energyUsage = energyData.totalEnergy;
         log.co2Emissions = energyData.co2Emissions;
       }
     });
 
-    storage.set({ chatgptLogs: logs }, function() {
+    storage.set({ aiChatLogs: logs }, function() {
       updateTodayStats(logs);
       updateLifetimeStats(logs);
       console.log(`Recalculated ${logs.length} logs with EcoLogits v0.9.x methodology`);
