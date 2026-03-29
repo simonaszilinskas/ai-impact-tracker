@@ -3,7 +3,7 @@
   "version": "2.2.0",
   "description": "Track the environmental impact of your AI usage",
   "scripts": {
-    "test": "node test-refactoring.js && node verify-fix.js && node test-global-scale.js"
+    "test": "node test-refactoring.js && node verify-fix.js && node test-global-scale.js && node test-providers.js"
   },
   "keywords": ["ai", "energy", "environmental", "carbon", "chatgpt"],
   "author": "Simon Zilinskas",

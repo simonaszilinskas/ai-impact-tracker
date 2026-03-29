@@ -19,7 +19,7 @@ A browser extension (for now only Chrome) that estimates the environmental impac
 
 ## Features
 
-- **Real-time Energy Tracking**: Monitors your ChatGPT conversations and calculates energy consumption
+- **Real-time Energy Tracking**: Monitors your AI chat conversations (ChatGPT and Claude) and calculates energy consumption
 - **EcoLogits v0.9.x Methodology**: Energy estimates based on academic research (EcoLogits methodology)
 - **Relatable Equivalents**: Understand your impact through everyday comparisons:
   - 📺 YouTube streaming time
@@ -30,10 +30,10 @@ A browser extension (for now only Chrome) that estimates the environmental impac
 - **Privacy-Focused**: No data collection, all tracking happens locally
 
 ## How it works
-This extension tracks messages the user sends to ChatGPT, tries to catch the number of output tokens by the models based on the character size of it's response, then it calculates the energy footprint. More on the methodology: https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md
+This extension tracks messages you send to AI chat platforms, estimates the number of output tokens based on response length, then calculates the energy footprint using provider-specific model parameters. More on the methodology: https://github.com/simonaszilinskas/ai-impact-tracker/blob/main/methodology.md
 
 ## Current status
-- Works exclusively with ChatGPT for now, with plans to support more AI platforms
+- Currently supports ChatGPT and Claude, with plans to support more AI platforms
 - First version will soon be published on the Chrome Web Store
 - Open to contributions
 

@@ -9,105 +9,144 @@ console.log('VERIFICATION: Issue #14 - Code Deduplication');
 console.log('='.repeat(70));
 console.log();
 
-// Import the shared module
+// Import the shared energy calculation module
 import {
   ECOLOGITS_CONSTANTS,
-  GPT5_PARAMS,
   calculateEnergyAndEmissions,
   getEnergyPerToken,
   getNumGPUs
 } from './energy-calculator.js';
 
-console.log('✅ Successfully imported energy-calculator.js as ES6 module');
+// Import provider configurations
+import { CHATGPT_PROVIDER, CLAUDE_PROVIDER } from './providers.js';
+
+console.log('Successfully imported energy-calculator.js and providers.js as ES6 modules');
 console.log();
 
-// Test 1: Check constants are defined (EcoLogits v0.9.x)
-console.log('Test 1: Checking constants...');
+// Provider test configurations
+const PROVIDER_TESTS = [
+  {
+    provider: CHATGPT_PROVIDER,
+    name: 'ChatGPT',
+    expected100tokens: { min: 0.23, max: 0.26 },
+    expectedGPUs: 16,
+    tokenRanges: [
+      { tokens: 10, min: 0.023, max: 0.026 },
+      { tokens: 100, min: 0.23, max: 0.26 },
+      { tokens: 1000, min: 2.3, max: 2.6 },
+      { tokens: 5000, min: 11.5, max: 13.0 }
+    ]
+  },
+  {
+    provider: CLAUDE_PROVIDER,
+    name: 'Claude',
+    expected100tokens: { min: 3.5, max: 3.7 },
+    expectedGPUs: 64,
+    tokenRanges: [
+      { tokens: 10, min: 0.34, max: 0.39 },
+      { tokens: 100, min: 3.5, max: 3.7 },
+      { tokens: 1000, min: 35, max: 37 },
+      { tokens: 5000, min: 175, max: 185 }
+    ]
+  }
+];
+
+// Test 1: Check constants and provider params are defined
+console.log('Test 1: Checking constants and provider params...');
 console.log(`  GPU_ENERGY_ALPHA: ${ECOLOGITS_CONSTANTS.GPU_ENERGY_ALPHA}`);
 console.log(`  GPU_ENERGY_BETA: ${ECOLOGITS_CONSTANTS.GPU_ENERGY_BETA}`);
 console.log(`  GPU_ENERGY_GAMMA: ${ECOLOGITS_CONSTANTS.GPU_ENERGY_GAMMA}`);
 console.log(`  BATCH_SIZE: ${ECOLOGITS_CONSTANTS.BATCH_SIZE}`);
-console.log(`  GPT-5 Total Params: ${GPT5_PARAMS.TOTAL_PARAMS / 1e9}B`);
-console.log(`  GPT-5 Active Params: ${GPT5_PARAMS.ACTIVE_PARAMS / 1e9}B`);
+console.log(`  ChatGPT Total Params: ${CHATGPT_PROVIDER.modelParams.totalParams / 1e9}B`);
+console.log(`  ChatGPT Active Params: ${CHATGPT_PROVIDER.modelParams.activeParams / 1e9}B`);
+console.log(`  Claude Total Params: ${CLAUDE_PROVIDER.modelParams.totalParams / 1e9}B`);
+console.log(`  Claude Active Params: ${CLAUDE_PROVIDER.modelParams.activeParams / 1e9}B`);
 
 if (ECOLOGITS_CONSTANTS.GPU_ENERGY_ALPHA === 1.1665273170451914e-06 &&
     ECOLOGITS_CONSTANTS.GPU_BITS === 16 &&
     ECOLOGITS_CONSTANTS.BATCH_SIZE === 64 &&
-    GPT5_PARAMS.TOTAL_PARAMS === 300e9) {
-  console.log('  ✅ PASS - All constants correct');
+    CHATGPT_PROVIDER.modelParams.totalParams === 300e9 &&
+    CLAUDE_PROVIDER.modelParams.totalParams === 2000e9) {
+  console.log('  PASS - All constants and provider params correct');
 } else {
-  console.log('  ❌ FAIL - Constants mismatch');
+  console.error('  FAIL - Constants or provider params mismatch');
   process.exit(1);
 }
 console.log();
 
-// Test 2: Test calculateEnergyAndEmissions function
+// Test 2: Test calculateEnergyAndEmissions function with all providers
 console.log('Test 2: Testing calculateEnergyAndEmissions...');
-const result100 = calculateEnergyAndEmissions(100);
-console.log(`  100 tokens: ${result100.totalEnergy.toFixed(4)} Wh`);
-console.log(`  CO2 emissions: ${result100.co2Emissions.toFixed(4)} g`);
-console.log(`  NumGPUs: ${result100.numGPUs}`);
 
-if (result100.totalEnergy >= 0.23 && result100.totalEnergy <= 0.26) {
-  console.log('  ✅ PASS - Calculation matches expected (~0.243 Wh)');
-} else {
-  console.log(`  ❌ FAIL - Expected ~0.243 Wh, got ${result100.totalEnergy.toFixed(4)} Wh`);
-  process.exit(1);
-}
+PROVIDER_TESTS.forEach(({ provider, name, expected100tokens }) => {
+  console.log(`  ${name}:`);
+  const result = calculateEnergyAndEmissions(100, provider.modelParams);
+  console.log(`    100 tokens: ${result.totalEnergy.toFixed(4)} Wh`);
+  console.log(`    CO2 emissions: ${result.co2Emissions.toFixed(4)} g`);
+  console.log(`    NumGPUs: ${result.numGPUs}`);
+
+  if (result.totalEnergy >= expected100tokens.min && result.totalEnergy <= expected100tokens.max) {
+    console.log(`    PASS - Calculation within expected range`);
+  } else {
+    console.error(`    FAIL - Expected ${expected100tokens.min}-${expected100tokens.max} Wh, got ${result.totalEnergy.toFixed(4)} Wh`);
+    process.exit(1);
+  }
+});
 console.log();
 
-// Test 3: Test helper functions
+// Test 3: Test helper functions with all providers
 console.log('Test 3: Testing helper functions...');
-const energyPerToken = getEnergyPerToken();
-const numGPUs = getNumGPUs();
-console.log(`  getEnergyPerToken(): ${energyPerToken.toExponential(4)} kWh/token`);
-console.log(`  getNumGPUs(): ${numGPUs} GPUs`);
 
-if (energyPerToken > 0 && numGPUs === 16) {
-  console.log('  ✅ PASS - Helper functions work correctly');
-} else {
-  console.log('  ❌ FAIL - Helper functions returned unexpected values');
-  process.exit(1);
-}
+PROVIDER_TESTS.forEach(({ provider, name, expectedGPUs }) => {
+  console.log(`  ${name}:`);
+  const energyPerToken = getEnergyPerToken(provider.modelParams);
+  const numGPUs = getNumGPUs(provider.modelParams);
+  console.log(`    getEnergyPerToken(): ${energyPerToken.toExponential(4)} kWh/token`);
+  console.log(`    getNumGPUs(): ${numGPUs} GPUs`);
+
+  if (energyPerToken > 0 && numGPUs === expectedGPUs) {
+    console.log(`    PASS - Helper functions work correctly`);
+  } else {
+    console.error(`    FAIL - Expected ${expectedGPUs} GPUs, got ${numGPUs}`);
+    process.exit(1);
+  }
+});
 console.log();
 
-// Test 4: Compare multiple token counts
+// Test 4: Compare multiple token counts across all providers
 console.log('Test 4: Testing various token counts...');
-const testCases = [
-  { tokens: 10, expectedMin: 0.023, expectedMax: 0.026 },
-  { tokens: 100, expectedMin: 0.23, expectedMax: 0.26 },
-  { tokens: 1000, expectedMin: 2.3, expectedMax: 2.6 },
-  { tokens: 5000, expectedMin: 11.5, expectedMax: 13.0 }
-];
 
 let allPassed = true;
-testCases.forEach(test => {
-  const result = calculateEnergyAndEmissions(test.tokens);
-  const passed = result.totalEnergy >= test.expectedMin && result.totalEnergy <= test.expectedMax;
-  const status = passed ? '✅' : '❌';
-  console.log(`  ${status} ${test.tokens} tokens: ${result.totalEnergy.toFixed(2)} Wh (expected ${test.expectedMin}-${test.expectedMax} Wh)`);
-  if (!passed) allPassed = false;
+PROVIDER_TESTS.forEach(({ provider, name, tokenRanges }) => {
+  console.log(`  ${name}:`);
+
+  tokenRanges.forEach(test => {
+    const result = calculateEnergyAndEmissions(test.tokens, provider.modelParams);
+    const passed = result.totalEnergy >= test.min && result.totalEnergy <= test.max;
+    const status = passed ? 'PASS' : 'FAIL';
+    console.log(`    ${status}: ${test.tokens} tokens: ${result.totalEnergy.toFixed(2)} Wh (expected ${test.min}-${test.max} Wh)`);
+    if (!passed) allPassed = false;
+  });
 });
 
 if (allPassed) {
-  console.log('  ✅ PASS - All token counts within expected ranges');
+  console.log('  PASS - All token counts within expected ranges for all providers');
 } else {
-  console.log('  ❌ FAIL - Some calculations out of range');
+  console.error('  FAIL - Some calculations out of range');
   process.exit(1);
 }
 console.log();
 
 // Summary
 console.log('='.repeat(70));
-console.log('✅ ALL TESTS PASSED - Refactoring successful!');
+console.log('ALL TESTS PASSED - Refactoring successful!');
 console.log('='.repeat(70));
 console.log();
 console.log('Summary:');
-console.log('  ✅ Shared module loads correctly as ES6 module');
-console.log('  ✅ Constants are properly defined');
-console.log('  ✅ calculateEnergyAndEmissions works correctly');
-console.log('  ✅ Helper functions work correctly');
-console.log('  ✅ Calculations match expected values');
+console.log('  - Shared module loads correctly as ES6 module');
+console.log('  - Constants and provider params properly defined');
+console.log('  - calculateEnergyAndEmissions works correctly for all providers');
+console.log('  - Helper functions work correctly for all providers');
+console.log('  - Calculations match expected values for ChatGPT and Claude');
 console.log();
 console.log('Next steps:');
 console.log('  1. Load the extension in Chrome (chrome://extensions)');

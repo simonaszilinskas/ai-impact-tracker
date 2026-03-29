@@ -12,7 +12,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     // Fresh install
     console.log("Fresh install - initializing storage");
     chrome.storage.local.set({ 
-      chatgptLogs: [], 
+      aiChatLogs: [], 
       extensionVersion: chrome.runtime.getManifest().version 
     });
   } else if (details.reason === 'update') {
@@ -20,7 +20,7 @@ chrome.runtime.onInstalled.addListener((details) => {
     console.log("Extension update detected - preserving data");
     
     try {
-      chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], (result) => {
+      chrome.storage.local.get(['aiChatLogs', 'extensionVersion'], (result) => {
         // Check for runtime errors
         if (chrome.runtime.lastError) {
           console.error("Error accessing storage during update:", chrome.runtime.lastError);
@@ -35,16 +35,16 @@ chrome.runtime.onInstalled.addListener((details) => {
         
         // Extra log to debug upgrade path
         console.log("Existing data:", {
-          hasLogs: !!result.chatgptLogs,
-          logsIsArray: Array.isArray(result.chatgptLogs),
-          logsCount: Array.isArray(result.chatgptLogs) ? result.chatgptLogs.length : 0
+          hasLogs: !!result.aiChatLogs,
+          logsIsArray: Array.isArray(result.aiChatLogs),
+          logsCount: Array.isArray(result.aiChatLogs) ? result.aiChatLogs.length : 0
         });
         
-        // Make sure chatgptLogs exists and is valid
-        if (!result.chatgptLogs || !Array.isArray(result.chatgptLogs)) {
+        // Make sure aiChatLogs exists and is valid
+        if (!result.aiChatLogs || !Array.isArray(result.aiChatLogs)) {
           console.warn("Invalid logs format detected during update, repairing...");
           chrome.storage.local.set({ 
-            chatgptLogs: [], 
+            aiChatLogs: [], 
             extensionVersion: newVersion 
           });
         } else {

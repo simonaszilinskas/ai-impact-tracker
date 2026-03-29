@@ -86,7 +86,7 @@ testCases.forEach((test, index) => {
   console.log(`  Old v0.2 buggy:  ${buggy.totalEnergy.toFixed(4)} Wh`);
   console.log(`  New v0.9.x:      ${correct.totalEnergy.toFixed(4)} Wh`);
   console.log(`  Expected:        ${test.expectedMin.toFixed(3)} - ${test.expectedMax.toFixed(3)} Wh`);
-  console.log(`  ${passed ? '✅ PASS' : '❌ FAIL'}`);
+  console.log(`  ${passed ? 'PASS' : 'FAIL'}`);
   console.log();
 
   if (!passed) allTestsPassed = false;
@@ -123,9 +123,9 @@ console.log();
 
 console.log('='.repeat(70));
 if (allTestsPassed) {
-  console.log('✅ ALL TESTS PASSED - Fix is correct!');
+  console.log('ALL TESTS PASSED - Fix is correct!');
 } else {
-  console.log('❌ SOME TESTS FAILED - Review the implementation');
+  console.error('SOME TESTS FAILED - Review the implementation');
   process.exit(1);
 }
 console.log('='.repeat(70));

@@ -1,12 +1,16 @@
 /**
  * AI Impact Tracker - Content Script
  * =====================================
- * This script captures conversation data from the ChatGPT web interface,
+ * This script captures conversation data from AI chat interfaces (ChatGPT, Claude),
  * extracts message content, calculates token usage, energy consumption,
  * and CO2 emissions. It persists data to Chrome storage for the popup UI.
  *
- * Note: energy-calculator.js is loaded before this file via manifest.json
- * The calculateEnergyAndEmissions() function is available in global scope.
+ * Note: providers.js and energy-calculator.js are loaded before this file via manifest.json
+ * The calculateEnergyAndEmissions() function and provider detection are available in global scope.
+ *
+ * Behavior on unsupported pages:
+ * - If no provider is detected, the extension remains dormant (no scanning, no UI, no errors)
+ * - Extension only activates on supported platforms (see providers.js for full list)
  */
 
 // In-memory storage for conversation logs
@@ -14,6 +18,24 @@ const logs = [];
 let conversationId = null;
 let isExtensionContextValid = true; // Track if extension context is still valid
 let intervalIds = []; // Track all intervals to clear them if context is invalidated
+
+// Detect the active provider for this page
+let activeProvider = null;
+
+/**
+ * Initializes the provider for the current page
+ * @returns {boolean} True if provider detected, false otherwise
+ */
+function initializeProvider() {
+  activeProvider = detectProvider();
+  if (activeProvider) {
+    console.log(`AI Impact Tracker: Detected provider - ${activeProvider.name}`);
+    return true;
+  } else {
+    console.log('AI Impact Tracker: No supported provider detected for this page, extension will remain inactive');
+    return false;
+  }
+}
 
 /**
  * Checks if the extension context is still valid
@@ -73,18 +95,23 @@ function saveToStorage(data) {
 /**
  * Saves or updates a conversation exchange
  * @param {string} userMessage - The user's message
- * @param {string} assistantResponse - ChatGPT's response
+ * @param {string} assistantResponse - Assistant's response
  */
 async function saveLog(userMessage, assistantResponse) {
+  // Guard: only proceed if we have an active provider
+  if (!activeProvider) {
+    return;
+  }
+
   // Use message prefix as unique identifier for this exchange
   const userMessageKey = userMessage.substring(0, 100);
-  
-  // Estimate token count (4 chars ≈ 1 token for English text)
-  const userTokenCount = Math.ceil(userMessage.length / 4);
-  const assistantTokenCount = Math.ceil(assistantResponse.length / 4);
-  
-  // Calculate environmental impact using EcoLogits v0.9.x methodology
-  const energyData = calculateEnergyAndEmissions(assistantTokenCount);
+
+  // Estimate token count using provider-specific logic
+  const userTokenCount = activeProvider.estimateTokens(userMessage);
+  const assistantTokenCount = activeProvider.estimateTokens(assistantResponse);
+
+  // Calculate environmental impact using EcoLogits v0.9.x methodology with provider's model params
+  const energyData = calculateEnergyAndEmissions(assistantTokenCount, activeProvider.modelParams);
   const energyUsage = energyData.totalEnergy;
   const co2Emissions = energyData.co2Emissions;
   
@@ -112,7 +139,7 @@ async function saveLog(userMessage, assistantResponse) {
         lastUpdated: Date.now()
       };
       
-      saveToStorage({ chatgptLogs: logs });
+      saveToStorage({ aiChatLogs: logs });
       shouldUpdateNotification = true;
     }
   } else {
@@ -122,6 +149,7 @@ async function saveLog(userMessage, assistantResponse) {
       lastUpdated: Date.now(),
       url: window.location.href,
       conversationId: conversationId,
+      provider: activeProvider.id, // Store provider ID for recalculation
       userMessage: userMessage,
       assistantResponse: assistantResponse,
       userTokenCount: userTokenCount,
@@ -129,9 +157,9 @@ async function saveLog(userMessage, assistantResponse) {
       energyUsage: energyUsage,
       co2Emissions: co2Emissions
     };
-    
+
     logs.push(logEntry);
-    saveToStorage({ chatgptLogs: logs });
+    saveToStorage({ aiChatLogs: logs });
     shouldUpdateNotification = true;
   }
   
@@ -145,81 +173,36 @@ async function saveLog(userMessage, assistantResponse) {
 }
 
 /**
- * Scans the DOM for ChatGPT conversation messages
- * Uses data attributes specific to ChatGPT's DOM structure
+ * Scans the DOM for conversation messages using provider-specific selectors
  * Includes error handling to prevent extension crashes
  */
 async function scanMessages() {
-  // Skip if extension context is invalidated
-  if (!isExtensionContextValid) {
+  // Skip if extension context is invalidated or no provider
+  if (!isExtensionContextValid || !activeProvider) {
     return false;
   }
-  
+
   try {
-    // Find all user and assistant messages by their data attributes
-    const userMessages = [...document.querySelectorAll('[data-message-author-role="user"]')];
-    const assistantMessages = [...document.querySelectorAll('[data-message-author-role="assistant"]')];
-    
-    // Attempt alternative selectors if the primary ones didn't find anything
-    let foundMessages = userMessages.length > 0 && assistantMessages.length > 0;
-    
-    // If we didn't find any messages with the primary selectors, try alternative ones
-    if (!foundMessages) {
-      // Try some alternative selectors that might match different versions of ChatGPT
-      const alternativeUserSelectors = [
-        '.markdown p', // Look for paragraph text in markdown areas
-        '[data-role="user"]', 
-        '.user-message',
-        '[data-testid="user-message"]',
-        '.text-message-content'
-      ];
-      
-      const alternativeAssistantSelectors = [
-        '.markdown p',
-        '[data-role="assistant"]',
-        '.assistant-message', 
-        '[data-testid="assistant-message"]',
-        '.assistant-response'
-      ];
-      
-      // Try each alternative selector
-      for (const userSelector of alternativeUserSelectors) {
-        const altUserMessages = document.querySelectorAll(userSelector);
-        if (altUserMessages.length > 0) {
-          for (const assistantSelector of alternativeAssistantSelectors) {
-            const altAssistantMessages = document.querySelectorAll(assistantSelector);
-            if (altAssistantMessages.length > 0) {
-              console.log(`Found alternative selectors: ${userSelector} (${altUserMessages.length}) and ${assistantSelector} (${altAssistantMessages.length})`);
-              
-              // Try to process these alternative messages
-              for (let i = 0; i < Math.min(altUserMessages.length, altAssistantMessages.length); i++) {
-                try {
-                  const userMessage = altUserMessages[i].textContent.trim();
-                  const assistantResponse = altAssistantMessages[i].textContent.trim();
-                  
-                  if (userMessage && assistantResponse) {
-                    // Save any non-empty exchange
-                    await saveLog(userMessage, assistantResponse);
-                    foundMessages = true;
-                  }
-                } catch (altMessageError) {
-                  console.error("Error processing alternative message pair:", altMessageError);
-                }
-              }
-              
-              // If we found messages with this selector pair, stop trying others
-              if (foundMessages) break;
-            }
+    // Try provider's selectors in order of preference
+    let userMessages = [];
+    let assistantMessages = [];
+    let foundMessages = false;
+
+    // Try each user message selector until we find matches
+    for (const userSelector of activeProvider.selectors.userMessage) {
+      userMessages = [...document.querySelectorAll(userSelector)];
+      if (userMessages.length > 0) {
+        // Try each assistant message selector
+        for (const assistantSelector of activeProvider.selectors.assistantMessage) {
+          assistantMessages = [...document.querySelectorAll(assistantSelector)];
+          if (assistantMessages.length > 0) {
+            foundMessages = true;
+            console.log(`Found messages using selectors: ${userSelector} (${userMessages.length}) and ${assistantSelector} (${assistantMessages.length})`);
+            break;
           }
-          // If we found messages with any assistant selector, stop trying other user selectors
-          if (foundMessages) break;
         }
+        if (foundMessages) break;
       }
-    }
-    
-    // Log the results of the scan for debugging
-    if (userMessages.length > 0 || assistantMessages.length > 0) {
-      console.log(`Found ${userMessages.length} user messages and ${assistantMessages.length} assistant messages`);
     }
     
     // Process message pairs in order
@@ -252,21 +235,28 @@ async function scanMessages() {
  * Uses a fetch proxy pattern to capture API responses without affecting functionality
  */
 function setupFetchInterceptor() {
+  // Skip if no provider
+  if (!activeProvider || !activeProvider.apiPatterns) {
+    return;
+  }
+
   const originalFetch = window.fetch;
-  
+
   window.fetch = async function(resource, init) {
     const url = resource instanceof Request ? resource.url : resource;
-    
+
     // Call original fetch
     const response = await originalFetch.apply(this, arguments);
-    
-    // Process conversation API responses
-    if (typeof url === 'string' && url.includes('conversation')) {
+
+    // Process conversation API responses using provider patterns
+    if (typeof url === 'string' && url.includes(activeProvider.apiPatterns.conversationMatch)) {
       try {
-        // Extract conversation ID from URL
-        const match = url.match(/\/c\/([a-zA-Z0-9-]+)/);
-        if (match && match[1]) {
-          conversationId = match[1];
+        // Extract conversation ID from URL using provider's extractor
+        if (activeProvider.apiPatterns.extractConversationId) {
+          const extractedId = activeProvider.apiPatterns.extractConversationId(url);
+          if (extractedId) {
+            conversationId = extractedId;
+          }
         }
         
         // Process server-sent events streams
@@ -336,21 +326,30 @@ function setupFetchInterceptor() {
  * Efficiently triggers scans only when relevant content changes
  */
 function setupObserver() {
+  // Skip if no provider
+  if (!activeProvider) {
+    return;
+  }
+
   // Track the time of the last update to avoid excessive updates
   let lastUpdateTime = 0;
-  
+
   const observer = new MutationObserver(async (mutations) => {
     let shouldScan = false;
-    
+
     // Check if any assistant messages were added or modified
     for (const mutation of mutations) {
       if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
         for (const node of mutation.addedNodes) {
-          if (node.nodeType === Node.ELEMENT_NODE && 
-              (node.getAttribute('data-message-author-role') === 'assistant' || 
-               node.querySelector('[data-message-author-role="assistant"]'))) {
-            shouldScan = true;
-            break;
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            // Check against provider's assistant message selectors
+            for (const selector of activeProvider.selectors.assistantMessage) {
+              if (node.matches && node.matches(selector) || node.querySelector && node.querySelector(selector)) {
+                shouldScan = true;
+                break;
+              }
+            }
+            if (shouldScan) break;
           }
         }
       } else if (mutation.type === 'characterData') {
@@ -358,7 +357,7 @@ function setupObserver() {
         // This can catch typing updates on the assistant's responses
         shouldScan = true;
       }
-      
+
       if (shouldScan) break;
     }
     
@@ -655,24 +654,34 @@ function updateUsageNotification() {
  * Initializes the extension functionality
  */
 function initialize() {
+  // First, detect the provider for this page
+  const providerDetected = initializeProvider();
+
+  // If no provider detected, exit early (extension remains dormant)
+  if (!providerDetected) {
+    console.log('AI Impact Tracker: No provider detected, extension will not activate');
+    return;
+  }
+
   // Load existing logs from storage with improved error handling and retry
   initializeWithRetry(3);
-  
+
   // Setup periodic storage validation to fix potential issues
-  setInterval(validateAndRepairStorage, 5 * 60 * 1000); // Every 5 minutes
-  
+  const validationInterval = setInterval(validateAndRepairStorage, 5 * 60 * 1000); // Every 5 minutes
+  intervalIds.push(validationInterval);
+
   // Setup when DOM is ready
   const setupUI = async () => {
     setupFetchInterceptor();
     setupObserver();
     await scanMessages(); // Initial scan
-    
+
     // Create notification if not created yet
     if (!document.getElementById('ai-impact-notification')) {
       createUsageNotification();
     }
   };
-  
+
   if (document.readyState === "complete" || document.readyState === "interactive") {
     setTimeout(setupUI, 1000);
   } else {
@@ -680,23 +689,25 @@ function initialize() {
       setTimeout(setupUI, 1000);
     });
   }
-  
+
   // Monitor URL changes to detect new conversations
   let lastUrl = window.location.href;
   const urlMonitorInterval = setInterval(() => {
     if (lastUrl !== window.location.href) {
       lastUrl = window.location.href;
-      
-      // Extract conversation ID from URL
+
+      // Extract conversation ID from URL using provider's extractor
       try {
-        const match = window.location.href.match(/\/c\/([a-zA-Z0-9-]+)/);
-        if (match && match[1]) {
-          conversationId = match[1];
+        if (activeProvider && activeProvider.apiPatterns && activeProvider.apiPatterns.extractConversationId) {
+          const extractedId = activeProvider.apiPatterns.extractConversationId(window.location.href);
+          if (extractedId) {
+            conversationId = extractedId;
+          }
         }
       } catch {
         // Ignore URL parsing errors
       }
-      
+
       // Scan after URL change
       setTimeout(async () => await scanMessages(), 1000);
     }
@@ -728,12 +739,12 @@ function reloadLogsFromStorage() {
     }
     
     try {
-      chrome.storage.local.get(['chatgptLogs'], function(result) {
+      chrome.storage.local.get(['aiChatLogs'], function(result) {
         if (chrome.runtime.lastError) {
           console.error('Error reloading logs from storage:', chrome.runtime.lastError);
           resolve();
         } else {
-          const storedLogs = result.chatgptLogs || [];
+          const storedLogs = result.aiChatLogs || [];
           // Update the in-memory logs array with the recalculated values
           logs.length = 0; // Clear existing logs
           logs.push(...storedLogs); // Add the updated logs
@@ -790,7 +801,7 @@ function validateAndRepairStorage() {
   console.log("Running storage validation check...");
   
   try {
-    chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], (result) => {
+    chrome.storage.local.get(['aiChatLogs', 'extensionVersion'], (result) => {
     if (chrome.runtime.lastError) {
       console.error("Error checking storage:", chrome.runtime.lastError);
       return;
@@ -799,7 +810,7 @@ function validateAndRepairStorage() {
     let needsRepair = false;
     
     // Check if logs exists and is an array
-    if (!result.chatgptLogs || !Array.isArray(result.chatgptLogs)) {
+    if (!result.aiChatLogs || !Array.isArray(result.aiChatLogs)) {
       console.warn("Invalid logs format in storage, needs repair");
       needsRepair = true;
     }
@@ -815,14 +826,14 @@ function validateAndRepairStorage() {
       if (logs && Array.isArray(logs) && logs.length > 0) {
         console.log("Repairing storage with in-memory logs");
         chrome.storage.local.set({ 
-          chatgptLogs: logs,
+          aiChatLogs: logs,
           extensionVersion: chrome.runtime.getManifest().version
         });
       } else {
         // Otherwise initialize fresh (last resort)
         console.log("Initializing fresh logs in storage");
         chrome.storage.local.set({ 
-          chatgptLogs: [],
+          aiChatLogs: [],
           extensionVersion: chrome.runtime.getManifest().version
         });
       }
@@ -849,7 +860,7 @@ function validateAndRepairStorage() {
 function initializeWithRetry(retryCount = 3) {
   console.log(`Initializing with ${retryCount} retries remaining`);
   try {
-    chrome.storage.local.get(['chatgptLogs', 'extensionVersion'], (result) => {
+    chrome.storage.local.get(['aiChatLogs', 'extensionVersion'], (result) => {
       // Check for runtime error
       if (chrome.runtime.lastError) {
         console.error("Error loading logs:", chrome.runtime.lastError);
@@ -878,12 +889,12 @@ function initializeWithRetry(retryCount = 3) {
       console.log(`Extension version: Current=${currentVersion}, Stored=${storedVersion}`);
       
       // Load logs with validation
-      if (result && result.chatgptLogs && Array.isArray(result.chatgptLogs)) {
+      if (result && result.aiChatLogs && Array.isArray(result.aiChatLogs)) {
         try {
           // Clear any potential stale data
           logs.length = 0;
-          logs.push(...result.chatgptLogs);
-          console.log(`Loaded ${result.chatgptLogs.length} conversation logs`);
+          logs.push(...result.aiChatLogs);
+          console.log(`Loaded ${result.aiChatLogs.length} conversation logs`);
         } catch (arrayError) {
           console.error("Error adding logs to array:", arrayError);
           logs.length = 0;

@@ -57,34 +57,26 @@ const ECOLOGITS_CONSTANTS = {
 };
 
 /**
- * GPT-5 model parameters
- * Based on the latest model configuration
- */
-const GPT5_PARAMS = {
-  TOTAL_PARAMS: 300e9,        // 300 billion total parameters
-  ACTIVE_PARAMS: 60e9,        // 60 billion active parameters (average of 30-90B range)
-  ACTIVE_PARAMS_BILLIONS: 60, // Active params in billions (for formula)
-  ACTIVATION_RATIO: 0.2,      // 20% activation ratio (average: 60B/300B)
-  ACTIVE_PARAMS_MIN: 30e9,    // Minimum active parameters (30 billion)
-  ACTIVE_PARAMS_MAX: 90e9     // Maximum active parameters (90 billion)
-};
-
-/**
  * Calculates energy usage and CO2 emissions for LLM inference
  * using the EcoLogits v0.9.x methodology.
  *
  * @param {number} outputTokens - Number of tokens in the assistant's response
+ * @param {Object} modelParams - Model-specific parameters (required)
+ * @param {number} modelParams.totalParams - Total model parameters
+ * @param {number} modelParams.activeParams - Active parameters
+ * @param {number} modelParams.activeParamsBillions - Active params in billions (for formula)
+ * @param {number} modelParams.activationRatio - Activation ratio
  * @returns {Object} Energy and emissions data
  * @returns {number} returns.totalEnergy - Total energy consumption (Wh)
  * @returns {number} returns.co2Emissions - CO2 emissions (grams)
  * @returns {number} returns.numGPUs - Number of GPUs required
  * @returns {Object} returns.modelDetails - Additional model details
- *
- * @example
- * const result = calculateEnergyAndEmissions(100);
- * console.log(result.totalEnergy); // ~0.24 Wh
  */
-function calculateEnergyAndEmissions(outputTokens) {
+function calculateEnergyAndEmissions(outputTokens, modelParams) {
+  if (!modelParams) {
+    throw new Error('modelParams is required. Pass provider-specific model parameters.');
+  }
+
   const {
     GPU_ENERGY_ALPHA,
     GPU_ENERGY_BETA,
@@ -101,7 +93,18 @@ function calculateEnergyAndEmissions(outputTokens) {
     EMISSION_FACTOR
   } = ECOLOGITS_CONSTANTS;
 
-  const { TOTAL_PARAMS, ACTIVE_PARAMS, ACTIVE_PARAMS_BILLIONS, ACTIVATION_RATIO } = GPT5_PARAMS;
+  const { totalParams, activeParams, activeParamsBillions, activationRatio } = modelParams;
+
+  // Validate required parameters
+  if (!totalParams || !activeParams || !activeParamsBillions || activationRatio === undefined) {
+    throw new Error('modelParams must include: totalParams, activeParams, activeParamsBillions, and activationRatio');
+  }
+
+  // Convert to standardized naming for compatibility
+  const TOTAL_PARAMS = totalParams;
+  const ACTIVE_PARAMS = activeParams;
+  const ACTIVE_PARAMS_BILLIONS = activeParamsBillions;
+  const ACTIVATION_RATIO = activationRatio;
 
   // Step 1: GPU energy per token (kWh)
   // Exponential model: f_E(P_active, B) = α·exp(β·B)·P_active + γ, then /1000 for kWh
@@ -153,23 +156,33 @@ function calculateEnergyAndEmissions(outputTokens) {
  * Helper function to get energy per token
  * Useful for displaying rate information in UI
  *
+ * @param {Object} modelParams - Model-specific parameters (required)
+ * @param {number} modelParams.activeParamsBillions - Active params in billions
  * @returns {number} Energy per token in kWh/token (per GPU)
  */
-function getEnergyPerToken() {
+function getEnergyPerToken(modelParams) {
+  if (!modelParams || !modelParams.activeParamsBillions) {
+    throw new Error('modelParams with activeParamsBillions is required');
+  }
   const { GPU_ENERGY_ALPHA, GPU_ENERGY_BETA, GPU_ENERGY_GAMMA, BATCH_SIZE } = ECOLOGITS_CONSTANTS;
-  const { ACTIVE_PARAMS_BILLIONS } = GPT5_PARAMS;
-  return (GPU_ENERGY_ALPHA * Math.exp(GPU_ENERGY_BETA * BATCH_SIZE) * ACTIVE_PARAMS_BILLIONS + GPU_ENERGY_GAMMA) / 1000;
+  const { activeParamsBillions } = modelParams;
+  return (GPU_ENERGY_ALPHA * Math.exp(GPU_ENERGY_BETA * BATCH_SIZE) * activeParamsBillions + GPU_ENERGY_GAMMA) / 1000;
 }
 
 /**
- * Helper function to get the number of GPUs required for GPT-5
+ * Helper function to get the number of GPUs required for a model
  *
+ * @param {Object} modelParams - Model-specific parameters (required)
+ * @param {number} modelParams.totalParams - Total model parameters
  * @returns {number} Number of GPUs required
  */
-function getNumGPUs() {
+function getNumGPUs(modelParams) {
+  if (!modelParams || !modelParams.totalParams) {
+    throw new Error('modelParams with totalParams is required');
+  }
   const { GPU_MEMORY, GPU_BITS } = ECOLOGITS_CONSTANTS;
-  const { TOTAL_PARAMS } = GPT5_PARAMS;
-  const memoryRequired = 1.2 * TOTAL_PARAMS * GPU_BITS / 8;
+  const { totalParams } = modelParams;
+  const memoryRequired = 1.2 * totalParams * GPU_BITS / 8;
   const numGPUsRaw = Math.ceil(memoryRequired / (GPU_MEMORY * 1e9));
   return Math.pow(2, Math.ceil(Math.log2(numGPUsRaw))); // power-of-2 rounding
 }
@@ -179,7 +192,6 @@ function getNumGPUs() {
 if (typeof window !== 'undefined') {
   // Browser context - make available globally
   window.ECOLOGITS_CONSTANTS = ECOLOGITS_CONSTANTS;
-  window.GPT5_PARAMS = GPT5_PARAMS;
   window.calculateEnergyAndEmissions = calculateEnergyAndEmissions;
   window.getEnergyPerToken = getEnergyPerToken;
   window.getNumGPUs = getNumGPUs;
@@ -189,7 +201,6 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     ECOLOGITS_CONSTANTS,
-    GPT5_PARAMS,
     calculateEnergyAndEmissions,
     getEnergyPerToken,
     getNumGPUs
